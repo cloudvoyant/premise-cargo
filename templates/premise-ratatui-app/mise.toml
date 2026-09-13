@@ -10,8 +10,12 @@ description = "Remove build artifacts"
 run = "cargo clean"
 
 [tasks.test]
-description = "Run the test suite"
-run = "cargo test"
+description = "Run the test suite and hermetic publish-guard checks"
+run = '''
+set -eu
+cargo test
+bash tests/publish-guards.sh
+'''
 
 [tasks.lint]
 description = "Lint with clippy (deny warnings)"

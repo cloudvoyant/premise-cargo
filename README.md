@@ -15,7 +15,7 @@ Every template is a standalone Cargo package: its `Cargo.toml` is self-contained
 
 ## Requirements
 
-- A current Rust toolchain with `cargo`, `rustfmt`, and `clippy` (the generated `mise.toml` installs and activates them).
+- A current Rust toolchain with `cargo`, `rustfmt`, and `clippy`. The shared toolchain is declared only at `templates/mise.toml` (the Cargo workspace root); each template's `mise.toml` carries tasks only and declares no `[tools]`. Propagating that toolchain into a generated Premise project is deferred future work.
 - `pm` on `PATH` to list, generate, and validate templates.
 - Network access to the public Cargo registry source.
 

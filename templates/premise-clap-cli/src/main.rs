@@ -1,20 +1,21 @@
 use clap::Parser;
+use std::io::Write;
 
 /// A minimal Clap-derived command-line interface.
 #[derive(Parser)]
 #[command(version, about)]
 struct Cli {}
 
-/// Parse the given arguments and emit the greeting.
-fn run(cli: Cli) -> anyhow::Result<()> {
+/// Parse the given arguments and emit the greeting to `out`.
+fn run(cli: Cli, mut out: impl Write) -> anyhow::Result<()> {
     let _ = cli;
-    println!("hello premise-clap-cli!");
+    writeln!(out, "hello premise-clap-cli!")?;
     Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    run(cli)
+    run(cli, std::io::stdout())
 }
 
 #[cfg(test)]
@@ -22,8 +23,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_representative_args() {
+    fn prints_the_exact_greeting() {
         let cli = Cli::parse_from(["premise-clap-cli"]);
-        run(cli).unwrap();
+        let mut out = Vec::new();
+        run(cli, &mut out).unwrap();
+        assert_eq!(String::from_utf8(out).unwrap(), "hello premise-clap-cli!\n");
     }
 }
