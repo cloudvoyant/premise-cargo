@@ -25,16 +25,12 @@ jobs:
         with:
           persist-credentials: false
 
-      # BLOCKING DEPENDENCY: the Premise composite action's `source-build`
-      # input and its template-registry detection (which makes the `feature`
-      # flow run `pm template test` at a registry root instead of
-      # `//...:test`, `//...:format:check`, and `//...:lint`) are being added
-      # in a parallel workstream and are not yet merged. Pin the immutable
-      # commit SHA that ships both, then remove the placeholder below.
+      # The premise composite action detects a repository-root premise.yaml
+      # that declares templates and runs `pm template test` as the feature
+      # flow's authoritative check. Pinned to the immutable commit that adds
+      # `build-premise-from-source` and that template-registry detection.
       - name: Run the Premise feature flow
-        # TODO(pin-sha): immutable commit SHA of cloudvoyant/premise.
-        uses: cloudvoyant/premise@0000000000000000000000000000000000000000
+        uses: cloudvoyant/premise@42840f3f82c208b1ec3a014fa13ef3151174a245
         with:
           flow: feature
-          # TODO(pin-sha): input not yet available in the action.
-          source-build: "true"
+          build-premise-from-source: "true"
