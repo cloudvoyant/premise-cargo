@@ -1,0 +1,40 @@
+# =============================================================================
+# mise.toml — Cargo workspace root (shared Rust tooling)
+# =============================================================================
+#
+# The single source of Rust tooling for every template. Each template's
+# mise.toml declares only contract tasks and inherits this toolchain through
+# mise's parent-config merge.
+
+[tools]
+# rustfmt + clippy declared here (comma-string form) so mise auto-installs
+# them; the cargo format/lint tasks then work without a separate install step.
+rust = { version = "1.88", components = "rustfmt,clippy" }
+
+[tasks.build]
+description = "Build every template package"
+run = "cargo build --workspace"
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "cargo clean"
+
+[tasks.test]
+description = "Run every template's tests"
+run = "cargo test --workspace"
+
+[tasks.lint]
+description = "Lint every template with clippy (deny warnings)"
+run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+
+[tasks."lint:fix"]
+description = "Auto-fix clippy findings"
+run = "cargo clippy --fix --allow-dirty --allow-staged"
+
+[tasks.format]
+description = "Format every template's sources"
+run = "cargo fmt --all"
+
+[tasks."format:check"]
+description = "Check formatting without modifying files"
+run = "cargo fmt --all --check"

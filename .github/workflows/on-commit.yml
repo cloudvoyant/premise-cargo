@@ -1,0 +1,40 @@
+---
+name: On Commit
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Test templates
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.event.before != '0000000000000000000000000000000000000000'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # BLOCKING DEPENDENCY: the Premise composite action's `source-build`
+      # input and its template-registry detection (which makes the `feature`
+      # flow run `pm template test` at a registry root instead of
+      # `//...:test`, `//...:format:check`, and `//...:lint`) are being added
+      # in a parallel workstream and are not yet merged. Pin the immutable
+      # commit SHA that ships both, then remove the placeholder below.
+      - name: Run the Premise feature flow
+        # TODO(pin-sha): immutable commit SHA of cloudvoyant/premise.
+        uses: cloudvoyant/premise@0000000000000000000000000000000000000000
+        with:
+          flow: feature
+          # TODO(pin-sha): input not yet available in the action.
+          source-build: "true"
