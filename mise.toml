@@ -1,11 +1,10 @@
 # =============================================================================
-# mise.toml — premise-cargo registry development environment
+# mise.toml — registry development environment
 # =============================================================================
 #
-# This root is the Premise template registry. It performs no Rust build,
-# format, or lint operations and installs no Rust toolchain. The shared Rust
-# toolchain (rust + rustfmt + clippy) and every Rust build task live only at
-# templates/mise.toml, the Cargo workspace root.
+# This root is the Premise template registry. It installs no Rust toolchain and
+# runs no Rust build, format, or lint commands. The shared toolchain and every
+# Rust build task live only at templates/mise.toml.
 
 [tasks."template-test"]
 description = "Run every declared template through the Premise contract"
@@ -15,7 +14,7 @@ run = "pm template test"
 description = "Validate registry structure"
 run = '''
 set -eu
-for f in premise.yaml templates/Cargo.toml templates/mise.toml; do
+for f in premise.yaml templates/mise.toml; do
   [ -f "$f" ] || { echo "error: missing $f" >&2; exit 1; }
 done
 echo "registry structure valid"
