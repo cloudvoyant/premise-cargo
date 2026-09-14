@@ -1,0 +1,32 @@
+---
+name: On Merge
+
+# Runs after a pull request merges into main. Re-validates the merged result on
+# the trunk. This registry is published as source from main, so `pm template
+# test` remains the authoritative check; there is no crates.io publication of
+# the template placeholder crates here.
+"on":
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Test templates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Same pinned Premise source-build feature flow as on-commit.yml, so the
+      # trunk revalidation exercises exactly what the PR branch did.
+      - name: Run the Premise feature flow
+        uses: cloudvoyant/premise@224d47d356ed02a7aeb6a45bd1c8cf8fec944997
+        with:
+          flow: feature
+          build-premise-from-source: "true"

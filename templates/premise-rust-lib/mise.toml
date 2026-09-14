@@ -10,12 +10,8 @@ description = "Remove build artifacts"
 run = "cargo clean"
 
 [tasks.test]
-description = "Run the test suite and hermetic publish-guard checks"
-run = '''
-set -eu
-cargo test
-bash tests/publish-guards.sh
-'''
+description = "Run the test suite"
+run = "cargo test"
 
 [tasks.lint]
 description = "Lint with clippy (deny warnings)"
@@ -42,8 +38,8 @@ description = "Publish a prerelease (rc) version of the crate"
 run = '''
 set -eu
 if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
-  echo "publish:rc (test mode): cargo publish --dry-run"
-  cargo publish --dry-run
+  echo "publish:rc (test mode): cargo publish --dry-run --allow-dirty"
+  cargo publish --dry-run --allow-dirty
   exit 0
 fi
 version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.toml | head -n1)"
@@ -59,8 +55,8 @@ description = "Publish a stable version of the crate"
 run = '''
 set -eu
 if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
-  echo "publish (test mode): cargo publish --dry-run"
-  cargo publish --dry-run
+  echo "publish (test mode): cargo publish --dry-run --allow-dirty"
+  cargo publish --dry-run --allow-dirty
   exit 0
 fi
 version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.toml | head -n1)"

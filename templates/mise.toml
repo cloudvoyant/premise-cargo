@@ -7,9 +7,12 @@
 # mise's parent-config merge.
 
 [tools]
-# rustfmt + clippy declared here (comma-string form) so mise auto-installs
-# them; the cargo format/lint tasks then work without a separate install step.
-rust = { version = "1.88", components = "rustfmt,clippy" }
+# `pm install` owns the install lifecycle, so this registry does not duplicate
+# it with an install task. During registry checks, mise loads this parent config
+# and auto-installs the declared tools when a template task needs them.
+# rustfmt, clippy, and rust-analyzer are declared here (comma-string form); the
+# cargo format/lint tasks then work without a separate template install task.
+rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
 
 [tasks.build]
 description = "Build every template package"
