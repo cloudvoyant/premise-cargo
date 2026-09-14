@@ -30,7 +30,7 @@ jobs:
       # flow's authoritative check. Pinned to the immutable commit that adds
       # `build-premise-from-source` and that template-registry detection.
       - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@224d47d356ed02a7aeb6a45bd1c8cf8fec944997
+        uses: cloudvoyant/premise@d568bf627cd09559fb507af58661bc3cc1daa1d3
         with:
           flow: feature
           build-premise-from-source: "true"

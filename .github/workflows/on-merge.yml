@@ -26,7 +26,7 @@ jobs:
       # Same pinned Premise source-build feature flow as on-commit.yml, so the
       # trunk revalidation exercises exactly what the PR branch did.
       - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@224d47d356ed02a7aeb6a45bd1c8cf8fec944997
+        uses: cloudvoyant/premise@d568bf627cd09559fb507af58661bc3cc1daa1d3
         with:
           flow: feature
           build-premise-from-source: "true"
