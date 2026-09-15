@@ -71,6 +71,7 @@ if [ -z "$version" ]; then
   echo "error: publish:rc requires RELEASE_VERSION" >&2
   exit 1
 fi
+mise run publish:setup
 scripts/publish-cargo.sh rc "$version"
 '''
 
@@ -101,5 +102,6 @@ if [ -z "$version" ]; then
   echo "error: publish requires RELEASE_VERSION" >&2
   exit 1
 fi
+mise run publish:setup
 scripts/publish-cargo.sh stable "${version#v}"
 '''
