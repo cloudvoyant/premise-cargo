@@ -33,6 +33,21 @@ run = "cargo fmt --all --check"
 description = "Pull external environment configuration"
 run = 'echo "env-pull: nothing to pull"'
 
+[tasks."publish:setup"]
+description = "Verify the crates.io token is ready for publication"
+run = '''
+set -eu
+if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
+  echo "publish:setup (test mode): crates.io token preflight skipped"
+  exit 0
+fi
+if [ -z "${CARGO_REGISTRY_TOKEN:-}" ]; then
+  echo "error: publish:setup requires the crates.io token in CARGO_REGISTRY_TOKEN" >&2
+  exit 1
+fi
+echo "publish:setup: CARGO_REGISTRY_TOKEN is set (value not shown); ready for token-based publication"
+'''
+
 [tasks."publish:rc"]
 description = "Publish a prerelease (rc) version of the crate"
 run = '''
@@ -47,7 +62,7 @@ case "$version" in
   *-*) ;;
   *) echo "error: publish:rc requires a SemVer prerelease version (got $version)" >&2; exit 1 ;;
 esac
-cargo publish
+cargo publish --allow-dirty
 '''
 
 [tasks.publish]
@@ -63,5 +78,5 @@ version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.
 case "$version" in
   *-*) echo "error: publish requires a stable version (got $version)" >&2; exit 1 ;;
 esac
-cargo publish
+cargo publish --allow-dirty
 '''

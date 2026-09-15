@@ -21,16 +21,92 @@ jobs:
       github.event.before != '0000000000000000000000000000000000000000'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
 
-      # The premise composite action detects a repository-root premise.yaml
-      # that declares templates and runs `pm template test` as the feature
-      # flow's authoritative check. Pinned to the immutable commit that adds
-      # `build-premise-from-source` and that template-registry detection.
       - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@d568bf627cd09559fb507af58661bc3cc1daa1d3
+        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
         with:
           flow: feature
           build-premise-from-source: "true"
+
+      - name: Test publication contract
+        shell: bash
+        run: scripts/test-publish-cargo.sh
+
+  release-matrix:
+    name: Test stable release matrix
+    runs-on: macos-14
+    needs: verify
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup premise and mise
+        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        with:
+          flow: setup
+          install: "false"
+          build-premise-from-source: "true"
+
+      - name: Build all release archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd templates
+          mise exec -- goreleaser release --snapshot --clean \
+            --parallelism 1 -f ../.goreleaser.yml
+          for binary in premise-rust-app premise-clap-cli premise-ratatui-app; do
+            count="$(find dist -maxdepth 1 -type f \
+              -name "$binary-*.tar.gz" | wc -l | tr -d ' ')"
+            if [ "$count" != "4" ]; then
+              echo "::error::$binary produced $count archives; expected 4"
+              exit 1
+            fi
+          done
+
+  # RC publication is opt-in: it runs only on a non-main branch push whose HEAD
+  # commit message contains the exact marker `[publish-rc]`. Pull requests never
+  # reach this job and never receive publish credentials. The version is the
+  # svu-derived MAJOR.MINOR.PATCH-rc.<run number>, with the leading `v` stripped
+  # for Cargo. The crates.io token is mapped to CARGO_REGISTRY_TOKEN only here.
+  publish-rc:
+    name: Publish RC crates
+    runs-on: ubuntu-latest
+    needs: verify
+    environment: crates-io-rc
+    concurrency:
+      group: cargo-rc-${{ github.ref }}
+      cancel-in-progress: false
+    if: >-
+      github.event_name == 'push' &&
+      github.event.before != '0000000000000000000000000000000000000000' &&
+      contains(github.event.head_commit.message, '[publish-rc]')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Setup premise and mise
+        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        with:
+          flow: setup
+          install: "false"
+          build-premise-from-source: "true"
+
+      - name: Publish RC crates
+        shell: bash
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(pm version rc --identifier "$GITHUB_RUN_NUMBER")"
+          version="${version#v}"
+          RELEASE_VERSION="$version" mise run publish:rc

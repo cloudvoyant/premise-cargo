@@ -12,7 +12,12 @@
 # and auto-installs the declared tools when a template task needs them.
 # rustfmt, clippy, and rust-analyzer are declared here (comma-string form); the
 # cargo format/lint tasks then work without a separate template install task.
+# cargo-zigbuild (with zig) is the cross-compiler used by GoReleaser's Rust
+# builder. The shared publication script applies release versions directly to
+# the disposable checkout.
 rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
+"cargo:cargo-zigbuild" = "0.23.4"
+zig = "0.16.0"
 
 [tasks.build]
 description = "Build every template package"

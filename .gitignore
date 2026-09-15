@@ -2,6 +2,10 @@
 target/
 **/target/
 
+# GoReleaser artifacts
+dist/
+**/dist/
+
 # mise local state
 .mise/
 **/.mise/

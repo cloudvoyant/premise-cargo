@@ -1,0 +1,95 @@
+---
+# GoReleaser configuration for the premise-cargo registry.
+#
+# Builds the three application binaries from the templates Cargo workspace using
+# GoReleaser's Rust builder (cargo-zigbuild). The library package
+# (premise-rust-lib) is intentionally left out of the binary builds; it
+# publishes only to crates.io.
+#
+# GoReleaser runs from templates/ (so `dir: .` is the Cargo workspace and the
+# Rust toolchain from templates/mise.toml is active). The root `publish` task
+# invokes it with `-f ../.goreleaser.yml`.
+version: 2
+
+project_name: premise-cargo
+
+builds:
+  - id: premise-rust-app
+    builder: rust
+    binary: premise-rust-app
+    dir: .
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+      - x86_64-apple-darwin
+      - aarch64-apple-darwin
+    flags:
+      - --release
+      - -p=premise-rust-app
+
+  - id: premise-clap-cli
+    builder: rust
+    binary: premise-clap-cli
+    dir: .
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+      - x86_64-apple-darwin
+      - aarch64-apple-darwin
+    flags:
+      - --release
+      - -p=premise-clap-cli
+
+  - id: premise-ratatui-app
+    builder: rust
+    binary: premise-ratatui-app
+    dir: .
+    targets:
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
+      - x86_64-apple-darwin
+      - aarch64-apple-darwin
+    flags:
+      - --release
+      - -p=premise-ratatui-app
+
+archives:
+  - id: premise-rust-app
+    ids:
+      - premise-rust-app
+    formats:
+      - tar.gz
+    name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+  - id: premise-clap-cli
+    ids:
+      - premise-clap-cli
+    formats:
+      - tar.gz
+    name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+  - id: premise-ratatui-app
+    ids:
+      - premise-ratatui-app
+    formats:
+      - tar.gz
+    name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore"
+
+release:
+  mode: keep-existing
+  replace_existing_artifacts: true
+  github:
+    owner: cloudvoyant
+    name: premise-cargo
