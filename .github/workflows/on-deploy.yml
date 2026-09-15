@@ -1,0 +1,32 @@
+---
+name: On Deploy
+
+# Manual only for now. The deploy flow is a no-op until this repo defines a
+# `deploy` mise task.
+"on":
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: false
+        default: staging
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Deploy
+        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        with:
+          flow: deploy
+          build-premise-from-source: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}

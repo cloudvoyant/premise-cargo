@@ -1,0 +1,11 @@
+[package]
+name = "premise-rust-app"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A minimal Rust application template that prints a greeting."
+license = "MIT"
+
+[dependencies]
+anyhow = "1.0.104"
+thiserror = "2.0.20"

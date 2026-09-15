@@ -1,0 +1,107 @@
+# =============================================================================
+# mise.toml — registry development environment
+# =============================================================================
+#
+# This root is the Premise template registry. It installs no Rust toolchain and
+# runs no Rust build, format, or lint commands. The shared toolchain and every
+# Rust build task live only at templates/mise.toml.
+
+[tools]
+# Non-Rust release support. svu drives `pm version`; GoReleaser builds the
+# stable GitHub release binaries for the three application templates.
+svu = "3.4.1"
+goreleaser = "2.18.1"
+
+[tasks."template-test"]
+description = "Run every declared template through the Premise contract"
+run = "pm template test"
+
+[tasks.build]
+description = "Validate registry structure"
+run = '''
+set -eu
+for f in premise.yaml templates/mise.toml scripts/publish-cargo.sh scripts/test-publish-cargo.sh; do
+  [ -f "$f" ] || { echo "error: missing $f" >&2; exit 1; }
+done
+echo "registry structure valid"
+'''
+
+[tasks.test]
+description = "Run the registry contract (every declared template)"
+run = "mise run template-test"
+
+[tasks.format]
+description = "Format registry mise configuration"
+run = "mise fmt"
+
+[tasks."format:check"]
+description = "Check registry mise configuration formatting"
+run = "mise fmt --check"
+
+[tasks.lint]
+description = "Validate registry configuration"
+run = '''
+set -eu
+mise fmt --check
+bash -n scripts/*.sh
+[ -f premise.yaml ] || { echo "error: missing premise.yaml" >&2; exit 1; }
+echo "registry config valid"
+'''
+
+[tasks.clean]
+description = "Remove registry artifacts"
+run = "true"
+
+[tasks."publish:setup"]
+description = "Aggregate per-package crates.io token preflights"
+run = '''
+set -eu
+for pkg in premise-rust-lib premise-rust-app premise-clap-cli premise-ratatui-app; do
+  echo "publish:setup: $pkg"
+  (cd "templates/$pkg" && mise run publish:setup)
+done
+'''
+
+[tasks."publish:rc"]
+description = "Publish a release-candidate version of all four crates"
+run = '''
+set -eu
+version="${RELEASE_VERSION:-}"
+if [ -z "$version" ]; then
+  echo "error: publish:rc requires RELEASE_VERSION" >&2
+  exit 1
+fi
+mise run publish:setup
+scripts/publish-cargo.sh rc "$version"
+'''
+
+[tasks.release]
+description = "Publish stable GitHub release binaries with GoReleaser"
+run = '''
+set -eu
+version="${RELEASE_VERSION:-}"
+if [ -z "$version" ]; then
+  echo "error: release requires RELEASE_VERSION" >&2
+  exit 1
+fi
+if ! printf '%s' "$version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "error: release requires a stable vMAJOR.MINOR.PATCH version (got $version)" >&2
+  exit 1
+fi
+# Run before Cargo publication modifies the disposable checkout. Conflicting
+# GitHub assets are replaced on rerun.
+(cd templates && mise exec -- goreleaser release --clean --parallelism 1 -f ../.goreleaser.yml)
+'''
+
+[tasks.publish]
+description = "Publish a stable version of all four crates"
+run = '''
+set -eu
+version="${RELEASE_VERSION:-}"
+if [ -z "$version" ]; then
+  echo "error: publish requires RELEASE_VERSION" >&2
+  exit 1
+fi
+mise run publish:setup
+scripts/publish-cargo.sh stable "${version#v}"
+'''
