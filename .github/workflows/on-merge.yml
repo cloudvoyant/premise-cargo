@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
 
       - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@42e6f51fe7ab1f6c1c9dbe8028a7572fcc2d08d2
+        uses: cloudvoyant/premise@ac27b6e3a5398ae43969a5d7a56a9dd98dda7c84
         with:
           flow: feature
           build-premise-from-source: "true"
