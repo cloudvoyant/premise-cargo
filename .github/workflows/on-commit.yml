@@ -26,7 +26,7 @@ jobs:
           persist-credentials: false
 
       - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        uses: cloudvoyant/premise@bd67902eb321aec80b0352b7f7c40ea526cb7ab2
         with:
           flow: feature
           build-premise-from-source: "true"
@@ -47,7 +47,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup premise and mise
-        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        uses: cloudvoyant/premise@bd67902eb321aec80b0352b7f7c40ea526cb7ab2
         with:
           flow: setup
           install: "false"
@@ -57,11 +57,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd templates
-          mise exec -- goreleaser release --snapshot --clean \
-            --parallelism 1 -f ../.goreleaser.yml
+          pm release snapshot
           for binary in premise-rust-app premise-clap-cli premise-ratatui-app; do
-            count="$(find dist -maxdepth 1 -type f \
+            count="$(find templates/dist -maxdepth 1 -type f \
               -name "$binary-*.tar.gz" | wc -l | tr -d ' ')"
             if [ "$count" != "4" ]; then
               echo "::error::$binary produced $count archives; expected 4"
@@ -95,7 +93,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup premise and mise
-        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        uses: cloudvoyant/premise@bd67902eb321aec80b0352b7f7c40ea526cb7ab2
         with:
           flow: setup
           install: "false"

@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Deploy
-        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        uses: cloudvoyant/premise@bd67902eb321aec80b0352b7f7c40ea526cb7ab2
         with:
           flow: deploy
           build-premise-from-source: "true"

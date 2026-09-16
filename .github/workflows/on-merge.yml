@@ -1,15 +1,9 @@
 ---
 name: On Merge
 
-# Runs after a pull request merges into main. Re-validates the merged result,
-# determines the next stable version with `pm version`, creates and pushes the
-# stable tag when one is missing, then runs GoReleaser (three application
-# binaries) and the stable crates.io publication for all four crates.
-#
-# Rerun safety: if HEAD already carries a stable tag it is reused, GoReleaser
-# replaces conflicting GitHub release assets, and the shared Cargo script skips
-# crate/version pairs that already exist on crates.io. A failed run can be
-# retried against the same stable tag.
+# Premise owns stable release planning, tagging, GitHub artifacts, and the
+# language-package publication handoff. Reruns reuse the stable tag, replace
+# conflicting GitHub assets, and skip crate/version pairs already on crates.io.
 on:
   push:
     branches:
@@ -36,7 +30,7 @@ jobs:
           persist-credentials: false
 
       - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@b16e713570d37572b0e624d4768e64f6e81e8ec4
+        uses: cloudvoyant/premise@bd67902eb321aec80b0352b7f7c40ea526cb7ab2
         with:
           flow: feature
           build-premise-from-source: "true"
@@ -45,72 +39,17 @@ jobs:
         shell: bash
         run: scripts/test-publish-cargo.sh
 
-      - name: Determine release version
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch --force --tags origin
-          tag="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
-          skip="false"
-          reuse_tag="false"
-          version=""
-          if printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Reusing existing stable tag at HEAD: $tag"
-            version="$tag"
-            reuse_tag="true"
-          elif ! current="$(pm version current 2>/dev/null)"; then
-            echo "::error::pm version current failed;" \
-              "ensure the v0.0.0 bootstrap tag exists"
-            exit 1
-          else
-            next="$(pm version next)"
-            if [ "$current" = "$next" ]; then
-              echo "No release-worthy change (current=$current)."
-              skip="true"
-            else
-              echo "Next version: $next"
-              version="$next"
-            fi
-          fi
-          {
-            echo "version=$version"
-            echo "reuse_tag=$reuse_tag"
-            echo "skip=$skip"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Create and push stable tag
-        if: >-
-          steps.version.outputs.skip != 'true' &&
-          steps.version.outputs.reuse_tag != 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          version="${{ steps.version.outputs.version }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$version"
-          remote="https://x-access-token:${GH_TOKEN}@github.com"
-          git push "${remote}/${GITHUB_REPOSITORY}.git" "$version"
-
-      - name: Publish GitHub binaries
-        if: steps.version.outputs.skip != 'true'
-        shell: bash
+      - name: Prepare stable release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          RELEASE_VERSION="${{ steps.version.outputs.version }}" \
-            mise run release
+        run: pm release prepare
+
+      - name: Publish GitHub binaries
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pm release github
 
       - name: Publish stable crates
-        if: steps.version.outputs.skip != 'true'
-        shell: bash
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
-        run: |
-          set -euo pipefail
-          RELEASE_VERSION="${{ steps.version.outputs.version }}" \
-            mise run publish
+        run: pm release packages

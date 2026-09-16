@@ -11,7 +11,7 @@ A Rust/Cargo template registry for [Premise](https://github.com/cloudvoyant/prem
 | `premise-clap-cli`    | app  | A minimal Clap-derived CLI that prints `hello premise-clap-cli!`.                         |
 | `premise-ratatui-app` | app  | A Ratatui terminal app that renders `hello premise-ratatui` centered and exits on Ctrl-C. |
 
-Every template is a standalone Cargo package: its `Cargo.toml` is self-contained (no workspace inheritance), so a generated project builds outside this registry. Shared Rust tooling (`rust` with the `rustfmt`, `clippy`, and `rust-analyzer` components, plus `cargo-zigbuild`/`zig` for cross-compilation) lives only at `templates/mise.toml`; the repository root `mise.toml` performs no Rust build, format, or lint operations and installs only the non-Rust release tools (`svu` and GoReleaser).
+Every template is a standalone Cargo package: its `Cargo.toml` is self-contained (no workspace inheritance), so a generated project builds outside this registry. Shared Rust tooling (`rust` with the `rustfmt`, `clippy`, and `rust-analyzer` components, plus `cargo-zigbuild`/`zig` for cross-compilation) lives only at `templates/mise.toml`; the repository root `mise.toml` performs no Rust build, format, or lint operations and installs no release tools. Premise owns version and release tooling.
 
 ## Requirements
 
@@ -60,7 +60,7 @@ This repository is the template registry, delivered as source by merging to `mai
 
 ### Versioning
 
-Release versions are calculated with `svu` (through the Premise `pm version` command) from a `v0.0.0` stable bootstrap tag that is created externally before CI runs. `.svu.yml` restricts svu to stable SemVer tags (`vMAJOR.MINOR.PATCH`) and ignores unrelated tags. Calculated versions are applied only to the disposable CI checkout and are never committed.
+Release versions are calculated by Premise through the svu Go SDK from a `v0.0.0` stable bootstrap tag that is created externally before CI runs. Premise restricts calculation to stable SemVer tags (`vMAJOR.MINOR.PATCH`) and ignores unrelated tags. No `.svu.yml` file or svu executable is required. Calculated versions are applied only to the disposable CI checkout and are never committed.
 
 ### Release candidates
 
@@ -68,16 +68,16 @@ RC publication is opt-in: a feature-branch push whose HEAD commit message contai
 
 ### Stable releases
 
-On pushes to `main`, the on-merge workflow validates the trunk, reuses a stable tag already at HEAD or computes the next version with `pm version next`, creates and pushes the `vMAJOR.MINOR.PATCH` tag when one is missing, then publishes:
+On pushes to `main`, the on-merge workflow validates the trunk and runs `pm release prepare`, `pm release github`, and `pm release packages` in separate credential-bearing steps. Premise reuses or creates the stable tag, generates temporary GoReleaser configuration, publishes GitHub artifacts, and then invokes the registry's Cargo publication task:
 
-- GoReleaser builds the three application binaries (`premise-rust-app`, `premise-clap-cli`, `premise-ratatui-app`) for Linux/macOS x86_64/aarch64 and attaches the archives and checksums to the GitHub release. `premise-rust-lib` is left out of the binary builds and publishes only to crates.io.
+- GoReleaser builds the three application binaries (`premise-rust-app`, `premise-clap-cli`, `premise-ratatui-app`) for Linux/macOS x86_64/aarch64 and attaches the archives and checksums to the GitHub release. `premise-rust-lib` is left out of the binary builds and publishes only to crates.io. The repository does not carry `.goreleaser.yml`.
 - The shared publication script synchronizes all four crate versions and Cargo.lock, then publishes each crate/version pair that does not already exist on crates.io.
 
 Both publication paths are rerun-safe: GoReleaser replaces conflicting GitHub release assets, and already-published crate/version pairs are skipped. The shared script restores all transient `Cargo.toml` and `Cargo.lock` edits on success, failure, or interruption.
 
 ### crates.io token
 
-Publication is token-based. Restrict the `CRATES_TOKEN` organization secret to this repository and to a crates.io token that can publish only these four crates. Configure the `crates-io-rc` and `crates-io` GitHub environments with required reviewers. The secret is mapped to `CARGO_REGISTRY_TOKEN` only in the crate publication steps; it is never available to GoReleaser, printed, or persisted. Credential-free `pm template test` performs full Cargo dry-run verification first, and the credential-bearing step uses Cargo's `--no-verify` mode. `publish:setup` is a token-based preflight that verifies `CARGO_REGISTRY_TOKEN` is present without exposing it:
+Publication is token-based. Restrict the `CRATES_TOKEN` organization secret to this repository and to a crates.io token that can publish only these four crates. Configure the `crates-io-rc` and `crates-io` GitHub environments with required reviewers. GitHub and Cargo publication run in separate steps, so GoReleaser never receives the crates.io token. Premise also removes GitHub credentials before invoking the Cargo publication task and strips package credentials from GoReleaser defensively. Tokens are never printed or persisted. Credential-free `pm template test` performs full Cargo dry-run verification first, and the credential-bearing step uses Cargo's `--no-verify` mode. `publish:setup` is a token-based preflight that verifies `CARGO_REGISTRY_TOKEN` is present without exposing it:
 
 ```bash
 CARGO_REGISTRY_TOKEN=<token> mise run publish:setup

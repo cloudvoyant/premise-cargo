@@ -2,15 +2,10 @@
 # mise.toml — registry development environment
 # =============================================================================
 #
-# This root is the Premise template registry. It installs no Rust toolchain and
-# runs no Rust build, format, or lint commands. The shared toolchain and every
-# Rust build task live only at templates/mise.toml.
-
-[tools]
-# Non-Rust release support. svu drives `pm version`; GoReleaser builds the
-# stable GitHub release binaries for the three application templates.
-svu = "3.4.1"
-goreleaser = "2.18.1"
+# This root is the Premise template registry. It installs no language or
+# release toolchain and runs no Rust build, format, or lint commands. Shared
+# Rust tooling and build tasks live only at templates/mise.toml; Premise owns
+# version and release tooling.
 
 [tasks."template-test"]
 description = "Run every declared template through the Premise contract"
@@ -73,24 +68,6 @@ if [ -z "$version" ]; then
 fi
 mise run publish:setup
 scripts/publish-cargo.sh rc "$version"
-'''
-
-[tasks.release]
-description = "Publish stable GitHub release binaries with GoReleaser"
-run = '''
-set -eu
-version="${RELEASE_VERSION:-}"
-if [ -z "$version" ]; then
-  echo "error: release requires RELEASE_VERSION" >&2
-  exit 1
-fi
-if ! printf '%s' "$version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
-  echo "error: release requires a stable vMAJOR.MINOR.PATCH version (got $version)" >&2
-  exit 1
-fi
-# Run before Cargo publication modifies the disposable checkout. Conflicting
-# GitHub assets are replaced on rerun.
-(cd templates && mise exec -- goreleaser release --clean --parallelism 1 -f ../.goreleaser.yml)
 '''
 
 [tasks.publish]
