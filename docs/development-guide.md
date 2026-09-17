@@ -15,13 +15,13 @@ pm template ls
 pm ci flow on-commit --release none
 ```
 
-The flow runs the root `on-commit` override. That override validates registry structure, runs every template contract through `pm template test`, checks formatting and lint, and never uploads a package without the `[publish-rc]` marker on a non-main push.
+The flow uses Premise's default template-registry lifecycle. It enters each declared template, installs Mise tools, runs the template `install` task, and then runs the commit lifecycle. It never uploads a package without the `[publish-rc]` marker on a non-main push.
 
 ## Project Structure
 
 ```text
 premise.yaml             # template-registry manifest and template declarations
-mise.toml                # root CI overrides and coordinated package tasks
+mise.toml                # registry development and coordinated package tasks
 templates/mise.toml      # shared Rust toolchain and Cargo workspace tasks
 templates/*/             # standalone source templates
 .github/workflows/       # thin Premise action callers
@@ -56,10 +56,10 @@ The workflows contain checkout plus the Premise action. The action sets up Mise,
 
 - `on-commit` validates pull requests and unmarked feature pushes.
 - A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then invokes the root `publish:rc` task. Pull requests and unmarked pushes receive an empty token and never enter publication.
-- `on-merge` validates the registry and complete Rust archive matrix, then prepares the stable tag, publishes GitHub archives, and publishes crates in one Premise-owned flow.
+- `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow.
 - `on-release` runs manual stage or production deployment conventions.
 
-Root `on-commit` and `on-merge` Mise tasks override lifecycle fallback behavior. Guarded RC and stable publication remain owned by `pm ci flow` after the override completes.
+The registry intentionally does not define root `on-commit` or `on-merge` overrides. Premise's default template-registry flow owns lifecycle orchestration, guarded RC publication, and stable publication.
 
 ## Publishing
 

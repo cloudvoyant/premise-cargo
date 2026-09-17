@@ -11,24 +11,6 @@
 description = "Run every declared template through the Premise contract"
 run = "pm template test"
 
-[tasks.on-commit]
-description = "Validate the registry and every template contract"
-run = '''
-set -eu
-mise run build
-mise run test
-mise run format:check
-mise run lint
-'''
-
-[tasks.on-merge]
-description = "Validate the registry and stable release matrix"
-run = '''
-set -eu
-mise run on-commit
-pm release snapshot
-'''
-
 [tasks.build]
 description = "Validate registry structure"
 run = '''
