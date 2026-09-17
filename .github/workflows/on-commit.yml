@@ -53,8 +53,7 @@ jobs:
 
       - name: Run on-commit flow and publish RC
         uses: cloudvoyant/premise@v0
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
         with:
           flow: on-commit
           install-premise: build
+          cargo-token: ${{ secrets.CARGO_TOKEN }}
