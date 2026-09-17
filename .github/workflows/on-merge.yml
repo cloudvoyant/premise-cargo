@@ -32,7 +32,7 @@ jobs:
         uses: cloudvoyant/premise@v0
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
           flow: on-merge
           install-premise: build
-          cargo-token: ${{ secrets.CARGO_TOKEN }}

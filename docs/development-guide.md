@@ -81,6 +81,6 @@ GoReleaser builds archives for `premise-rust-app`, `premise-clap-cli`, and `prem
 
 ### Credentials
 
-Configure the protected `crates-io` and `crates-io-rc` GitHub environments with required reviewers. Store the restricted crates.io token as `CARGO_TOKEN` in both environments. Only the marked-push job enters `crates-io-rc` and maps the secret to `CARGO_REGISTRY_TOKEN`; pull requests and unmarked pushes run a separate job with no Cargo credential.
+Configure the protected `crates-io` and `crates-io-rc` GitHub environments with required reviewers. Store the restricted crates.io token as `CRATES_TOKEN` in both environments. Only the marked-push job enters `crates-io-rc` and maps the secret to `CARGO_REGISTRY_TOKEN`; pull requests and unmarked pushes run a separate job with no Cargo credential.
 
 Premise removes package credentials from the GoReleaser subprocess and removes GitHub credentials from the Cargo publication subprocess. Tokens are never printed or persisted. OIDC trusted publishing remains deferred under DIFF-152.
