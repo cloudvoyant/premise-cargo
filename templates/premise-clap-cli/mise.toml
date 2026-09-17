@@ -1,6 +1,10 @@
 # Template contract tasks. The shared Rust toolchain lives at the parent
 # templates/mise.toml and is inherited through mise's parent-config merge.
 
+[tasks.install]
+description = "Resolve and fetch Cargo dependencies"
+run = "cargo fetch"
+
 [tasks.build]
 description = "Compile the CLI"
 run = "cargo build"
@@ -48,6 +52,22 @@ fi
 echo "publish:setup: CARGO_REGISTRY_TOKEN is set (value not shown); ready for token-based publication"
 '''
 
+[tasks._publish]
+description = "Publish this crate unless its version already exists"
+hide = true
+run = '''
+set -eu
+name="$(sed -n 's/^name[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.toml | head -n1)"
+version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.toml | head -n1)"
+code="$(curl -sS -o /dev/null -w '%{http_code}' -A premise-release-check \
+  "https://crates.io/api/v1/crates/$name/$version" 2>/dev/null || true)"
+if [ "$code" = "200" ]; then
+  echo "skip: $name $version already published"
+  exit 0
+fi
+cargo publish --allow-dirty --no-verify
+'''
+
 [tasks."publish:rc"]
 description = "Publish a prerelease (rc) version of the crate"
 run = '''
@@ -62,7 +82,7 @@ case "$version" in
   *-*) ;;
   *) echo "error: publish:rc requires a SemVer prerelease version (got $version)" >&2; exit 1 ;;
 esac
-cargo publish --allow-dirty
+mise run _publish
 '''
 
 [tasks.publish]
@@ -78,7 +98,7 @@ version="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' Cargo.
 case "$version" in
   *-*) echo "error: publish requires a stable version (got $version)" >&2; exit 1 ;;
 esac
-cargo publish --allow-dirty
+mise run _publish
 '''
 
 [tasks.run]

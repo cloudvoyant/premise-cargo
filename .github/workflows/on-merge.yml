@@ -1,25 +1,45 @@
 ---
 name: On Merge
 
-# Premise owns stable release planning, tagging, GitHub artifacts, and the
-# language-package publication handoff. Reruns reuse the stable tag, replace
-# conflicting GitHub assets, and skip crate/version pairs already on crates.io.
-on:
+"on":
   push:
     branches:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: stable-release
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Validate and publish
+  github-release:
+    name: Validate and publish GitHub release
     runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Run GitHub on-merge flow
+        uses: cloudvoyant/premise@120ba28d0305e8215f10bfcdcbc92fac2257e782
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          flow: on-merge
+          release: github
+          install-premise: build
+
+  packages:
+    name: Publish stable crates
+    runs-on: ubuntu-latest
+    needs: github-release
     environment: crates-io
     steps:
       - name: Checkout code
@@ -29,27 +49,11 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
-      - name: Run the Premise feature flow
-        uses: cloudvoyant/premise@ac27b6e3a5398ae43969a5d7a56a9dd98dda7c84
-        with:
-          flow: feature
-          build-premise-from-source: "true"
-
-      - name: Test publication contract
-        shell: bash
-        run: scripts/test-publish-cargo.sh
-
-      - name: Prepare stable release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: pm release prepare
-
-      - name: Publish GitHub binaries
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: pm release github
-
-      - name: Publish stable crates
+      - name: Run package on-merge flow
+        uses: cloudvoyant/premise@120ba28d0305e8215f10bfcdcbc92fac2257e782
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
-        run: pm release packages
+        with:
+          flow: on-merge
+          release: packages
+          install-premise: build

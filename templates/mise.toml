@@ -7,10 +7,10 @@
 # mise's parent-config merge.
 
 [tools]
-# `pm install` owns the install lifecycle, so this registry does not duplicate
-# it with an install task. During registry checks, mise loads this parent config
-# and auto-installs the declared tools when a template task needs them.
-# rustfmt, clippy, and rust-analyzer are declared here (comma-string form); the
+# `pm install` owns tool installation. Each template's required `install` task
+# resolves and fetches Cargo dependencies after Mise loads this parent config and
+# installs the shared toolchain. rustfmt, clippy, and rust-analyzer are declared
+# here (comma-string form); the
 # cargo format/lint tasks then work without a separate template install task.
 # cargo-zigbuild (with zig) is the cross-compiler used by GoReleaser's Rust
 # builder. The shared publication script applies release versions directly to
