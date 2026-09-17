@@ -1,0 +1,13 @@
+[package]
+name = "premise-ratatui-app"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A minimal Ratatui terminal application that renders a centered greeting."
+license = "MIT"
+
+[dependencies]
+anyhow = "1.0.104"
+thiserror = "2.0.20"
+ratatui = "0.30.2"
+crossterm = "0.29"

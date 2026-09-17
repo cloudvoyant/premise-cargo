@@ -1,0 +1,48 @@
+# =============================================================================
+# mise.toml — Cargo workspace root (shared Rust tooling)
+# =============================================================================
+#
+# The single source of Rust tooling for every template. Each template's
+# mise.toml declares only contract tasks and inherits this toolchain through
+# mise's parent-config merge.
+
+[tools]
+# `pm install` owns tool installation. Each template's required `install` task
+# resolves and fetches Cargo dependencies after Mise loads this parent config and
+# installs the shared toolchain. rustfmt, clippy, and rust-analyzer are declared
+# here (comma-string form); the
+# cargo format/lint tasks then work without a separate template install task.
+# cargo-zigbuild (with zig) is the cross-compiler used by GoReleaser's Rust
+# builder. The shared publication script applies release versions directly to
+# the disposable checkout.
+rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
+"cargo:cargo-zigbuild" = "0.23.4"
+zig = "0.16.0"
+
+[tasks.build]
+description = "Build every template package"
+run = "cargo build --workspace"
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "cargo clean"
+
+[tasks.test]
+description = "Run every template's tests"
+run = "cargo test --workspace"
+
+[tasks.lint]
+description = "Lint every template with clippy (deny warnings)"
+run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+
+[tasks."lint:fix"]
+description = "Auto-fix clippy findings"
+run = "cargo clippy --fix --allow-dirty --allow-staged"
+
+[tasks.format]
+description = "Format every template's sources"
+run = "cargo fmt --all"
+
+[tasks."format:check"]
+description = "Check formatting without modifying files"
+run = "cargo fmt --all --check"

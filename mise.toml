@@ -1,0 +1,47 @@
+# =============================================================================
+# mise.toml — registry development environment
+# =============================================================================
+#
+# This root is the Premise template registry. It installs no language or
+# release toolchain and runs no Rust build, format, or lint commands. Shared
+# Rust tooling and build tasks live only at templates/mise.toml; Premise owns
+# version and release tooling.
+
+[tasks."template-test"]
+description = "Run every declared template through the Premise contract"
+run = "pm template test"
+
+[tasks.build]
+description = "Validate registry structure"
+run = '''
+set -eu
+for f in premise.yaml templates/mise.toml; do
+  [ -f "$f" ] || { echo "error: missing $f" >&2; exit 1; }
+done
+echo "registry structure valid"
+'''
+
+[tasks.test]
+description = "Run the registry contract (every declared template)"
+run = "mise run template-test"
+
+[tasks.format]
+description = "Format registry mise configuration"
+run = "mise fmt"
+
+[tasks."format:check"]
+description = "Check registry mise configuration formatting"
+run = "mise fmt --check"
+
+[tasks.lint]
+description = "Validate registry configuration"
+run = '''
+set -eu
+mise fmt --check
+[ -f premise.yaml ] || { echo "error: missing premise.yaml" >&2; exit 1; }
+echo "registry config valid"
+'''
+
+[tasks.clean]
+description = "Remove registry artifacts"
+run = "true"

@@ -1,0 +1,38 @@
+---
+name: On Merge
+
+# Premise owns stable release planning, tagging, and publication. Reruns reuse a
+# stable tag already at HEAD and skip crate/version pairs already on crates.io.
+"on":
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Validate and publish
+    runs-on: macos-14
+    environment: crates-io
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Run on-merge flow
+        uses: cloudvoyant/premise@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
+        with:
+          flow: on-merge
+          install-premise: build
