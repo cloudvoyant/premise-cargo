@@ -30,7 +30,7 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow
-        uses: cloudvoyant/premise@f2d347cbdf0c7679d250cf1ad607c939db90f0e8
+        uses: cloudvoyant/premise@v0
         with:
           flow: on-commit
           install-premise: build
@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow and publish RC
-        uses: cloudvoyant/premise@f2d347cbdf0c7679d250cf1ad607c939db90f0e8
+        uses: cloudvoyant/premise@v0
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
         with:
