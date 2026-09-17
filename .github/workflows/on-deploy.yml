@@ -1,16 +1,14 @@
 ---
 name: On Deploy
 
+# Manual only for now. The deploy flow is a no-op until this repo defines a
+# deployable surface.
 "on":
   workflow_dispatch:
     inputs:
       environment:
         description: Target environment
-        required: true
-        type: choice
-        options:
-          - stage
-          - prod
+        required: false
         default: stage
 
 permissions:

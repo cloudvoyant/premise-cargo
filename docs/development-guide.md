@@ -55,8 +55,8 @@ Each template implements the required `install` task with `cargo fetch`. Premise
 The workflows contain checkout plus the Premise action. The action sets up Mise, builds the pinned Premise revision, and invokes one flow:
 
 - `on-commit` validates pull requests and unmarked feature pushes.
-- A non-main push whose HEAD contains `[publish-rc]` runs the protected `on-commit` flow with the crates.io token. The same flow validates first and then invokes the root `publish:rc` task.
-- `on-merge` validates the registry and the complete Rust archive matrix, then prepares the stable tag, publishes GitHub archives, and publishes crates through separate release phases. Pull requests run the same flow with publication disabled to test the matrix.
+- A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then invokes the root `publish:rc` task. Pull requests and unmarked pushes receive an empty token and never enter publication.
+- `on-merge` validates the registry and complete Rust archive matrix, then prepares the stable tag, publishes GitHub archives, and publishes crates in one Premise-owned flow.
 - `on-release` runs manual stage or production deployment conventions.
 
 Root `on-commit` and `on-merge` Mise tasks override lifecycle fallback behavior. Guarded RC and stable publication remain owned by `pm ci flow` after the override completes.
@@ -81,6 +81,6 @@ GoReleaser builds archives for `premise-rust-app`, `premise-clap-cli`, and `prem
 
 ### Credentials
 
-Configure protected `crates-io-rc` and `crates-io` GitHub environments with required reviewers. Store the restricted crates.io token as `CRATES_TOKEN`; workflows map it to `CARGO_REGISTRY_TOKEN` only on package-publication action steps.
+Configure the protected `crates-io` GitHub environment with required reviewers. Store the restricted crates.io token as `CRATES_TOKEN`. The on-commit workflow maps it to `CARGO_REGISTRY_TOKEN` only for a marked push; pull requests and unmarked pushes receive an empty value.
 
-GitHub and crates.io credentials remain in separate jobs and subprocess environments. GoReleaser never receives the crates.io token, and Cargo publication never receives GitHub credentials. OIDC trusted publishing remains deferred under DIFF-152.
+Premise removes package credentials from the GoReleaser subprocess and removes GitHub credentials from the Cargo publication subprocess. Tokens are never printed or persisted. OIDC trusted publishing remains deferred under DIFF-152.
