@@ -22,17 +22,17 @@ jobs:
     environment: crates-io
     steps:
       - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
 
       - name: Run on-merge flow
-        uses: cloudvoyant/premise@66368d413ef281ada1a101da13480e7e2125b686
+        uses: cloudvoyant/premise@f2d347cbdf0c7679d250cf1ad607c939db90f0e8
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_TOKEN }}
         with:
           flow: on-merge
           install-premise: build

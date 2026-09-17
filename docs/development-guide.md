@@ -21,7 +21,7 @@ The flow uses Premise's default template-registry lifecycle. It enters each decl
 
 ```text
 premise.yaml             # template-registry manifest and template declarations
-mise.toml                # registry development and coordinated package tasks
+mise.toml                # registry development tasks
 templates/mise.toml      # shared Rust toolchain and Cargo workspace tasks
 templates/*/             # standalone source templates
 .github/workflows/       # thin Premise action callers
@@ -55,7 +55,7 @@ Each template implements the required `install` task with `cargo fetch`. Premise
 The workflows contain checkout plus the Premise action. The action sets up Mise, builds the pinned Premise revision, and invokes one flow:
 
 - `on-commit` validates pull requests and unmarked feature pushes.
-- A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then invokes the root `publish:rc` task. Pull requests and unmarked pushes receive an empty token and never enter publication.
+- A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then delegates coordinated publication to Premise's Cargo extension, which invokes each template's `publish:rc` task. Pull requests and unmarked pushes run without a Cargo token and never enter publication.
 - `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow.
 - `on-release` runs manual stage or production deployment conventions.
 
@@ -71,9 +71,9 @@ All four crates move together. RC versions use `MAJOR.MINOR.PATCH-rc.<github run
 
 ### Package Tasks
 
-The root publication task temporarily synchronizes all four `Cargo.toml` files and `Cargo.lock`, then invokes `publish:rc` or `publish` inside each template. Each package task checks crates.io and skips an existing crate/version pair before calling Cargo. A trap restores every source version after success, failure, or interruption.
+Premise's Cargo publication coordinator temporarily synchronizes all four `Cargo.toml` files and `Cargo.lock`, then invokes `publish:rc` or `publish` inside each template. Before it skips an existing crate/version pair, Premise verifies that the authenticated crates.io user owns the crate. Premise restores every source version after success or failure; each template task only validates its release kind and calls Cargo.
 
-`pm template test` sets `PREMISE_TEMPLATE_TEST=1`. In test mode, `publish:setup` skips token validation and each package publication task runs `cargo publish --dry-run --allow-dirty`. No package, tag, or release is created.
+`pm template test` sets `PREMISE_TEMPLATE_TEST=1`. In test mode, each package publication task runs `cargo publish --dry-run --allow-dirty`. No package, tag, or release is created.
 
 ### GitHub Archives
 
@@ -81,6 +81,6 @@ GoReleaser builds archives for `premise-rust-app`, `premise-clap-cli`, and `prem
 
 ### Credentials
 
-Configure the protected `crates-io` GitHub environment with required reviewers. Store the restricted crates.io token as `CRATES_TOKEN`. The on-commit workflow maps it to `CARGO_REGISTRY_TOKEN` only for a marked push; pull requests and unmarked pushes receive an empty value.
+Configure the protected `crates-io` and `crates-io-rc` GitHub environments with required reviewers. Store the restricted crates.io token as `CARGO_TOKEN` in both environments. Only the marked-push job enters `crates-io-rc` and maps the secret to `CARGO_REGISTRY_TOKEN`; pull requests and unmarked pushes run a separate job with no Cargo credential.
 
 Premise removes package credentials from the GoReleaser subprocess and removes GitHub credentials from the Cargo publication subprocess. Tokens are never printed or persisted. OIDC trusted publishing remains deferred under DIFF-152.

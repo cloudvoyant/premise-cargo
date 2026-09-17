@@ -20,12 +20,12 @@ jobs:
     environment: ${{ inputs.environment }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Run on-release flow
-        uses: cloudvoyant/premise@66368d413ef281ada1a101da13480e7e2125b686
+        uses: cloudvoyant/premise@f2d347cbdf0c7679d250cf1ad607c939db90f0e8
         with:
           flow: on-release
           environment: ${{ inputs.environment }}
