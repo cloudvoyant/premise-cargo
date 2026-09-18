@@ -7,11 +7,6 @@
 # Rust tooling and build tasks live only at templates/mise.toml; Premise owns
 # version and release tooling.
 
-monorepo_root = true
-
-[monorepo]
-config_roots = ["templates/*"]
-
 [tasks."template-test"]
 description = "Run every declared template through the Premise contract"
 run = "pm template test"
