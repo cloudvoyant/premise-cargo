@@ -19,7 +19,6 @@ jobs:
   release:
     name: Validate and publish
     runs-on: macos-14
-    environment: crates-io
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
