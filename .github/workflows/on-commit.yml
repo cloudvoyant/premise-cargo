@@ -17,10 +17,8 @@ jobs:
     name: Test, lint, and check formatting
     runs-on: ubuntu-latest
     if: >-
-      (github.event_name == 'pull_request' ||
-      github.event.before != '0000000000000000000000000000000000000000') &&
-      !(github.event_name == 'push' &&
-      contains(github.event.head_commit.message, '[publish-rc]'))
+      github.event_name == 'pull_request' ||
+      github.event.before != '0000000000000000000000000000000000000000'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -30,28 +28,6 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow
-        uses: cloudvoyant/premise@v0
-        with:
-          flow: on-commit
-          install-premise: build
-
-  release-candidate:
-    name: Test and publish release candidate
-    runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'push' &&
-      github.event.before != '0000000000000000000000000000000000000000' &&
-      contains(github.event.head_commit.message, '[publish-rc]')
-    environment: crates-io-rc
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Run on-commit flow and publish RC
         uses: cloudvoyant/premise@v0
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
