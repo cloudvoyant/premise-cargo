@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow and publish RC
-        uses: cloudvoyant/premise@v0
+        uses: cloudvoyant/premise@51de9a39027fd9c94338a7eb4b511ea6e25e9fd2
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
