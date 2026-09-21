@@ -6,7 +6,7 @@
 - [Mise](https://mise.jdx.dev/) — installs the declared Rust tools
 - Network access to crates.io
 
-No Rust toolchain needs to be installed by hand. Mise reads `templates/mise.toml` and installs Rust 1.88 with rustfmt, Clippy, and rust-analyzer, plus Zig and cargo-zigbuild for release archives.
+No Rust toolchain needs to be installed by hand. The root and generated-client Mise configurations install Rust 1.88 with rustfmt, Clippy, and rust-analyzer, plus Zig and cargo-zigbuild for release archives.
 
 ## Getting Started
 
@@ -21,14 +21,16 @@ The flow uses Premise's default template-registry lifecycle. It enters each decl
 
 ```text
 premise.yaml             # template-registry manifest and template declarations
-mise.toml                # registry development tasks
-templates/mise.toml      # shared Rust toolchain and Cargo workspace tasks
-templates/*/             # standalone source templates
+Cargo.toml               # aggregate source and release workspace
+Cargo.lock               # aggregate source dependency lock
+mise.toml                # registry development tasks and release toolchain
+templates/mise.toml      # shared generated-client Rust toolchain
+templates/*/             # standalone source templates and contracts
 .github/workflows/       # thin Premise action callers
 docs/                    # development documentation
 ```
 
-The root is a template registry, not a monorepo. Every source template has its own `Cargo.toml` and `mise.toml`. Template package versions remain `0.1.0` in source; calculated release versions exist only in disposable CI checkouts.
+The root is a template registry and an aggregate Cargo workspace used for source validation and coordinated releases. It is not a Premise monorepo. Every source template has its own `Cargo.toml` and `mise.toml`. Direct files under `templates/` become generated client root inputs; the selected package lands under `apps/<name>` or `libs/<name>`. Template package versions remain `0.1.0` in source; calculated release versions exist only in disposable CI checkouts.
 
 ## Development Workflow
 
@@ -37,10 +39,10 @@ The root is a template registry, not a monorepo. Every source template has its o
 3. Check registry formatting with `mise fmt --check`.
 4. Inspect the generated release matrix with `pm release snapshot` when release configuration changes.
 
-To work directly at the shared Cargo workspace:
+Each template implements the required `install` task with `cargo fetch`. Premise runs that task after Mise tool setup and validates each template contract independently. To work directly on one template, change into its directory and run its contract tasks:
 
 ```bash
-cd templates
+cd templates/premise-rust-lib
 mise install
 mise run build
 mise run test
@@ -48,7 +50,7 @@ mise run format:check
 mise run lint
 ```
 
-Each template implements the required `install` task with `cargo fetch`. Premise runs that task after Mise tool setup. A generated standalone project creates its own lockfile on first install. Generated-project tool propagation remains tracked separately in DIFF-149.
+A generated package creates its own lockfile when used without a client-root Cargo workspace. Generated-project tool propagation remains tracked separately in DIFF-149.
 
 ## CI Flows
 
@@ -71,7 +73,7 @@ All four crates move together. RC versions use `MAJOR.MINOR.PATCH-rc.<github run
 
 ### Package Tasks
 
-Premise's Cargo publication coordinator temporarily synchronizes all four `Cargo.toml` files and `Cargo.lock`, then invokes `publish:rc` or `publish` inside each template. Before it skips an existing crate/version pair, Premise verifies that the authenticated crates.io user owns the crate. Premise restores every source version after success or failure; each template task only validates its release kind and calls Cargo.
+Premise's Cargo publication coordinator temporarily synchronizes all four package manifests and the root `Cargo.lock`, then invokes `publish:rc` or `publish` inside each template. Before it skips an existing crate/version pair, Premise verifies that the authenticated crates.io user owns the crate. Premise restores every source version and the root lock after success or failure; each template task only validates its release kind and calls Cargo.
 
 `pm template test` sets `PREMISE_TEMPLATE_TEST=1`. In test mode, each package publication task runs `cargo publish --dry-run --allow-dirty`. No package, tag, or release is created.
 

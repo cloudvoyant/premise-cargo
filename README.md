@@ -11,7 +11,7 @@ A Rust/Cargo template registry for [Premise](https://github.com/cloudvoyant/prem
 | `premise-clap-cli`    | app  | A minimal Clap-derived CLI that prints `hello premise-clap-cli!`.                         |
 | `premise-ratatui-app` | app  | A Ratatui terminal app that renders `hello premise-ratatui` centered and exits on Ctrl-C. |
 
-Every template is a standalone Cargo package. Shared registry tooling lives at `templates/mise.toml`; each template keeps the task contract copied into generated projects.
+Every template is a standalone Cargo package. The repository-root `Cargo.toml` and `Cargo.lock` form the aggregate source and release workspace. Direct files under `templates/` merge into generated client workspace roots, so `templates/mise.toml` contains only the shared Rust toolchain. Each selected template keeps its package metadata and contract tasks under `apps/<name>` or `libs/<name>`.
 
 ## Requirements
 

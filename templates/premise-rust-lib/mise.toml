@@ -23,7 +23,7 @@ run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
 
 [tasks."lint:fix"]
 description = "Auto-fix clippy findings"
-run = "cargo clippy --fix --allow-dirty --allow-staged"
+run = "cargo clippy --fix --allow-dirty --allow-staged --allow-no-vcs"
 
 [tasks.format]
 description = "Format Rust sources"

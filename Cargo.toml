@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "templates/premise-rust-lib",
+    "templates/premise-rust-app",
+    "templates/premise-clap-cli",
+    "templates/premise-ratatui-app",
+]
+resolver = "3"
