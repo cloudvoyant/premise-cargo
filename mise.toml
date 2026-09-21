@@ -2,10 +2,14 @@
 # mise.toml — registry development environment
 # =============================================================================
 #
-# This root is the Premise template registry. It installs no language or
-# release toolchain and runs no Rust build, format, or lint commands. Shared
-# Rust tooling and build tasks live only at templates/mise.toml; Premise owns
-# version and release tooling.
+# This root owns the template registry and aggregate Cargo source workspace.
+# Generated projects receive only files declared in premise.yaml under
+# template_registry.workspace_files. Each template owns its tools and tasks.
+
+[tools]
+rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
+"cargo:cargo-zigbuild" = "0.23.4"
+zig = "0.16.0"
 
 [tasks."template-test"]
 description = "Run every declared template through the Premise contract"
@@ -15,7 +19,7 @@ run = "pm template test"
 description = "Validate registry structure"
 run = '''
 set -eu
-for f in premise.yaml templates/mise.toml; do
+for f in premise.yaml Cargo.toml Cargo.lock; do
   [ -f "$f" ] || { echo "error: missing $f" >&2; exit 1; }
 done
 echo "registry structure valid"

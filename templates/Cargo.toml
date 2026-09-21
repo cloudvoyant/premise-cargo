@@ -1,8 +1,0 @@
-[workspace]
-members = [
-    "premise-rust-lib",
-    "premise-rust-app",
-    "premise-clap-cli",
-    "premise-ratatui-app",
-]
-resolver = "3"

@@ -1,5 +1,9 @@
-# Template contract tasks. The shared Rust toolchain lives at the parent
-# templates/mise.toml and is inherited through mise's parent-config merge.
+# Template contract tasks and generated-project Rust toolchain.
+
+[tools]
+rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
+"cargo:cargo-zigbuild" = "0.23.4"
+zig = "0.16.0"
 
 [tasks.install]
 description = "Resolve and fetch Cargo dependencies"
@@ -23,7 +27,7 @@ run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
 
 [tasks."lint:fix"]
 description = "Auto-fix clippy findings"
-run = "cargo clippy --fix --allow-dirty --allow-staged"
+run = "cargo clippy --fix --allow-dirty --allow-staged --allow-no-vcs"
 
 [tasks.format]
 description = "Format Rust sources"
