@@ -20,17 +20,17 @@ The flow uses Premise's default template-registry lifecycle. It enters each decl
 ## Project Structure
 
 ```text
-premise.yaml             # template-registry manifest and template declarations
+premise.yaml             # registry declarations and workspace-file allowlist
 Cargo.toml               # aggregate source and release workspace
 Cargo.lock               # aggregate source dependency lock
 mise.toml                # registry development tasks and release toolchain
-templates/mise.toml      # shared generated-client Rust toolchain
-templates/*/             # standalone source templates and contracts
+.gitignore               # declared generated-client root policy
+templates/*/             # standalone source templates, tools, and contracts
 .github/workflows/       # thin Premise action callers
 docs/                    # development documentation
 ```
 
-The root is a template registry and an aggregate Cargo workspace used for source validation and coordinated releases. It is not a Premise monorepo. Every source template has its own `Cargo.toml` and `mise.toml`. Direct files under `templates/` become generated client root inputs; the selected package lands under `apps/<name>` or `libs/<name>`. Template package versions remain `0.1.0` in source; calculated release versions exist only in disposable CI checkouts.
+The root is a template registry and an aggregate Cargo workspace used for source validation and coordinated releases. It is not a Premise monorepo. Every source template has its own `Cargo.toml` and `mise.toml`, including the Rust toolchain needed after generation. Only repository-root files declared by `template_registry.workspace_files` become client-root inputs; the selected package lands under `apps/<name>` or `libs/<name>`. The aggregate root `Cargo.toml` and `Cargo.lock` remain registry-only. Template package versions remain `0.1.0` in source; calculated release versions exist only in disposable CI checkouts.
 
 ## Development Workflow
 

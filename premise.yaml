@@ -1,7 +1,7 @@
 workspace:
   name: premise-cargo
   kind: template-registry
-  schema-version: "0.1"
+  schema-version: "0.2"
   providers:
     ci: github
     tools: mise
@@ -9,36 +9,43 @@ workspace:
     infra: none
     versioning: svu
   projects: []
-templates:
-  - name: premise-rust-lib
-    kind: lib
-    questions:
-      - prompt: "Library name:"
-        type: string
-        populate: name
-    substitutions:
-      premise-rust-lib: name
-  - name: premise-rust-app
-    kind: app
-    questions:
-      - prompt: "App name:"
-        type: string
-        populate: name
-    substitutions:
-      premise-rust-app: name
-  - name: premise-clap-cli
-    kind: app
-    questions:
-      - prompt: "App name:"
-        type: string
-        populate: name
-    substitutions:
-      premise-clap-cli: name
-  - name: premise-ratatui-app
-    kind: app
-    questions:
-      - prompt: "App name:"
-        type: string
-        populate: name
-    substitutions:
-      premise-ratatui-app: name
+template_registry:
+  workspace_files:
+    - .gitignore
+  templates:
+    - name: premise-rust-lib
+      kind: lib
+      path: templates/premise-rust-lib
+      questions:
+        - prompt: "Library name:"
+          type: string
+          populate: name
+      substitutions:
+        premise-rust-lib: name
+    - name: premise-rust-app
+      kind: app
+      path: templates/premise-rust-app
+      questions:
+        - prompt: "App name:"
+          type: string
+          populate: name
+      substitutions:
+        premise-rust-app: name
+    - name: premise-clap-cli
+      kind: app
+      path: templates/premise-clap-cli
+      questions:
+        - prompt: "App name:"
+          type: string
+          populate: name
+      substitutions:
+        premise-clap-cli: name
+    - name: premise-ratatui-app
+      kind: app
+      path: templates/premise-ratatui-app
+      questions:
+        - prompt: "App name:"
+          type: string
+          populate: name
+      substitutions:
+        premise-ratatui-app: name

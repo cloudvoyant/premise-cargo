@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
 
       - name: Run on-merge flow
-        uses: cloudvoyant/premise@v0
+        uses: cloudvoyant/premise@feature/mise-merge
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
