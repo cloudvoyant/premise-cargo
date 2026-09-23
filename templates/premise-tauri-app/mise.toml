@@ -20,6 +20,11 @@ description = "Install native packages and fetch Cargo dependencies"
 run = '''
 set -eu
 if command -v apt-get >/dev/null 2>&1; then
+  if command -v sudo >/dev/null 2>&1; then
+    sudo apt-get update
+  else
+    apt-get update
+  fi
   mise bootstrap packages apply --manager apt
 else
   echo "install: apt-get unavailable; skipping Debian/Ubuntu native packages"
