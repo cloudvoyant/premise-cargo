@@ -19,6 +19,9 @@ jobs:
   release:
     name: Validate and publish
     runs-on: macos-14
+    outputs:
+      version: ${{ steps.stable-release.outputs.version }}
+      should_publish: ${{ steps.stable-release.outputs.should_publish }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -35,3 +38,47 @@ jobs:
         with:
           flow: on-merge
           install-premise: build
+
+      - name: Resolve stable release
+        id: stable-release
+        shell: bash
+        run: scripts/resolve-stable-release.sh "$GITHUB_OUTPUT"
+
+  tauri:
+    name: Publish Tauri installers (${{ matrix.os }})
+    needs: release
+    if: needs.release.outputs.should_publish == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - macos-14
+          - windows-2022
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Install Mise
+        uses: jdx/mise-action@v3
+        with:
+          install: false
+
+      - name: Install Tauri tools
+        shell: bash
+        working-directory: templates/premise-tauri-app
+        run: mise install
+
+      - name: Publish native installers
+        shell: bash
+        working-directory: templates/premise-tauri-app
+        env:
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: mise run publish

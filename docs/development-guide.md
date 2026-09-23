@@ -58,7 +58,7 @@ The workflows contain checkout plus the Premise action. The action sets up Mise,
 
 - `on-commit` validates pull requests and unmarked feature pushes.
 - A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then delegates coordinated publication to Premise's Cargo extension, which invokes each template's `publish:rc` task. Pull requests and unmarked pushes run without a Cargo token and never enter publication.
-- `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow.
+- `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow. After that release job finds exactly one strict stable tag at the checked-out commit, a native Tauri matrix runs on Ubuntu 22.04, macOS 14, and Windows 2022. A commit with no stable tag skips the matrix; a rerun reuses the same tag and safely replaces installer assets.
 - `on-release` runs manual stage or production deployment conventions.
 
 The registry intentionally does not define root `on-commit` or `on-merge` overrides. Premise's default template-registry flow owns lifecycle orchestration, guarded RC publication, and stable publication.
@@ -81,7 +81,7 @@ Premise's Cargo publication coordinator temporarily synchronizes all four packag
 
 GoReleaser builds archives for `premise-rust-app`, `premise-clap-cli`, and `premise-ratatui-app` for Linux and macOS on x86_64 and aarch64. `premise-rust-lib` publishes only to crates.io. Premise generates temporary GoReleaser configuration and removes it after the run.
 
-The Tauri template does not enter Cargo registry or generic GoReleaser publication because its package is nested and declares `publish = false`. Its own stable `mise run publish` task builds only the current platform's installable bundles and uploads them to the existing `v$RELEASE_VERSION` GitHub Release with `gh release upload --clobber`. `mise run publish:rc` is an explicit successful no-op. A generated Tauri project supports `install`, `build`, `clean`, `test`, `lint`, `lint:fix`, `format`, `format:check`, `env-pull`, `publish:rc`, `publish`, `run`, `dev`, `deploy`, and `e2e`. It contains only the committed HTML/CSS placeholder; connecting another frontend is deferred.
+The Tauri template does not enter Cargo registry or generic GoReleaser publication because its package is nested and declares `publish = false`. Its own stable `mise run publish` task builds only the current platform's installable bundles and uploads them to the existing `v$RELEASE_VERSION` GitHub Release with `gh release upload --clobber`. Premise remains responsible for release intent and the prepared GitHub Release; the repository workflow invokes the public template task once per native runner. If Premise skips stable publication, no native jobs run. If the workflow reruns for an existing stable tag, the same jobs safely replace assets with matching names. `mise run publish:rc` is an explicit successful no-op. A generated Tauri project supports `install`, `build`, `clean`, `test`, `lint`, `lint:fix`, `format`, `format:check`, `env-pull`, `publish:rc`, `publish`, `run`, `dev`, `deploy`, and `e2e`. It contains only the committed HTML/CSS placeholder; connecting another frontend is deferred.
 
 ### Credentials
 
