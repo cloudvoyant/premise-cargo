@@ -1,0 +1,164 @@
+# Template contract tasks, generated-project Rust toolchain, and native host packages.
+
+[tools]
+rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
+"cargo:tauri-cli" = "2.11.5"
+
+[bootstrap.packages]
+"apt:libwebkit2gtk-4.1-dev" = "latest"
+"apt:libayatana-appindicator3-dev" = "latest"
+"apt:librsvg2-dev" = "latest"
+"apt:libxdo-dev" = "latest"
+"apt:libssl-dev" = "latest"
+"apt:build-essential" = "latest"
+"apt:curl" = "latest"
+"apt:wget" = "latest"
+"apt:file" = "latest"
+
+[tasks.install]
+description = "Install native packages and fetch Cargo dependencies"
+run = '''
+set -eu
+if command -v apt-get >/dev/null 2>&1; then
+  mise bootstrap packages apply --manager apt
+else
+  echo "install: apt-get unavailable; skipping Debian/Ubuntu native packages"
+fi
+cargo fetch --manifest-path src-tauri/Cargo.toml
+'''
+
+[tasks.build]
+description = "Compile the Tauri application without bundling"
+depends = ["install"]
+run = "cargo tauri build --debug --no-bundle"
+
+[tasks.clean]
+description = "Remove build artifacts"
+run = "cargo clean --manifest-path src-tauri/Cargo.toml"
+
+[tasks.test]
+description = "Run the Rust test suite"
+depends = ["install"]
+run = "cargo test --manifest-path src-tauri/Cargo.toml"
+
+[tasks.lint]
+description = "Lint with clippy (deny warnings)"
+run = "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings"
+
+[tasks."lint:fix"]
+description = "Auto-fix clippy findings"
+run = "cargo clippy --manifest-path src-tauri/Cargo.toml --fix --allow-dirty --allow-staged --allow-no-vcs"
+
+[tasks.format]
+description = "Format Rust sources"
+run = "cargo fmt --manifest-path src-tauri/Cargo.toml --all"
+
+[tasks."format:check"]
+description = "Check formatting without modifying files"
+run = "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check"
+
+[tasks.env-pull]
+description = "Pull external environment configuration"
+run = 'echo "env-pull: nothing to pull"'
+
+[tasks."publish:rc"]
+description = "Report that Tauri release-candidate artifacts are unsupported"
+run = 'echo "publish:rc: Tauri release-candidate artifacts are unsupported"'
+
+[tasks.publish]
+description = "Build and upload stable native installers to a GitHub Release"
+depends = ["install"]
+run = '''
+set -eu
+
+if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
+  version="${RELEASE_VERSION:-1.2.3}"
+  cargo tauri build --debug --no-bundle --config "{\"version\":\"${version}\"}"
+  echo "publish (test mode): would build native bundles for v${version} and upload only current-platform installers with gh release upload --clobber"
+  exit 0
+fi
+
+version="${RELEASE_VERSION:-}"
+if ! printf '%s\n' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\+[0-9A-Za-z.-]+)?$'; then
+  echo "error: RELEASE_VERSION must be a stable SemVer without a leading v" >&2
+  exit 1
+fi
+
+repository="${GITHUB_REPOSITORY:-}"
+if [ -z "$repository" ]; then
+  echo "error: GITHUB_REPOSITORY must be owner/repository" >&2
+  exit 1
+fi
+
+token="${PREMISE_GITHUB_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
+if [ -z "$token" ]; then
+  echo "error: set PREMISE_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN" >&2
+  exit 1
+fi
+export GH_TOKEN="$token"
+
+tag="v${version}"
+os="$(uname -s)"
+case "$os" in
+  Linux)
+    bundles="deb,appimage"
+    asset_pattern='.*\.(deb|AppImage)$'
+    ;;
+  Darwin)
+    bundles="dmg"
+    asset_pattern='.*\.dmg$'
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    bundles="msi,nsis"
+    asset_pattern='.*\.(msi|exe)$'
+    ;;
+  *)
+    echo "error: unsupported native bundle platform: $os" >&2
+    exit 1
+    ;;
+esac
+
+cargo tauri build --bundles "$bundles" --config "{\"version\":\"${version}\"}"
+assets_file="$(mktemp)"
+trap 'rm -f "$assets_file"' EXIT
+find src-tauri/target/release/bundle -type f | grep -E "$asset_pattern" > "$assets_file" || true
+if [ ! -s "$assets_file" ]; then
+  echo "error: no installable assets found for $os" >&2
+  exit 1
+fi
+while IFS= read -r asset; do
+  gh release upload "$tag" "$asset" --clobber --repo "$repository"
+done < "$assets_file"
+'''
+
+[tasks.run]
+description = "Run the Tauri application"
+depends = ["install"]
+run = '''
+set -eu
+if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
+  cargo tauri build --debug --no-bundle
+else
+  cargo tauri dev
+fi
+'''
+
+[tasks.dev]
+description = "Run the Tauri application in development mode"
+depends = ["install"]
+run = '''
+set -eu
+if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
+  cargo tauri build --debug --no-bundle
+else
+  cargo tauri dev
+fi
+'''
+
+[tasks.deploy]
+description = "Validate the deploy contract (no deployable surface)"
+run = 'echo "deploy: no deployable surface"'
+
+[tasks.e2e]
+description = "Validate the e2e contract (no end-to-end surface)"
+run = 'echo "e2e: no end-to-end surface"'
