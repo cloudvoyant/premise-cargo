@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Run on-merge flow
-        uses: cloudvoyant/premise@feature/mise-merge
+        uses: cloudvoyant/premise@feature/tauri-support
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}

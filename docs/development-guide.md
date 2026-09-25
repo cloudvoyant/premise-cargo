@@ -57,7 +57,7 @@ A generated package creates its own lockfile when used without a client-root Car
 The workflows contain checkout plus the Premise action. The action sets up Mise, builds the pinned Premise revision, and invokes one flow:
 
 - `on-commit` validates pull requests and unmarked feature pushes.
-- A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then delegates coordinated publication to Premise's Cargo extension, which invokes each template's `publish:rc` task. Pull requests and unmarked pushes run without a Cargo token and never enter publication.
+- A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then delegates package selection to Premise's Cargo package-manager plugin, which invokes eligible templates' `publish:rc` tasks. Pull requests and unmarked pushes run without a Cargo token and never enter publication.
 - `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow. After that release job finds exactly one strict stable tag at the checked-out commit, a native Tauri matrix runs on Ubuntu 22.04, macOS 14, and Windows 2022. A commit with no stable tag skips the matrix; a rerun reuses the same tag and safely replaces installer assets.
 - `on-release` runs manual stage or production deployment conventions.
 
@@ -73,7 +73,7 @@ All four crates move together. RC versions use `MAJOR.MINOR.PATCH-rc.<github run
 
 ### Package Tasks
 
-Premise's Cargo publication coordinator temporarily synchronizes all four package manifests and the root `Cargo.lock`, then invokes `publish:rc` or `publish` inside each template. Before it skips an existing crate/version pair, Premise verifies that the authenticated crates.io user owns the crate. Premise restores every source version and the root lock after success or failure; each template task only validates its release kind and calls Cargo.
+Premise's Cargo package-manager plugin selects matching direct packages whose `[package] publish` permits crates.io. It temporarily synchronizes their manifests and the root `Cargo.lock`, checks whether each crate/version already exists, then invokes `publish:rc` or `publish` inside eligible templates. An existing version is skipped without an ownership check; a new version is subject to Cargo's normal authentication and authorization at publish time. Premise restores every source version and the root lock after success or failure; each template task validates its release kind and calls Cargo.
 
 `pm template test` sets `PREMISE_TEMPLATE_TEST=1`. In test mode, each package publication task runs `cargo publish --dry-run --allow-dirty`. No package, tag, or release is created.
 

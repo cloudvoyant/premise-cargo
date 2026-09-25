@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow
-        uses: cloudvoyant/premise@feature/mise-merge
+        uses: cloudvoyant/premise@feature/tauri-support
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
