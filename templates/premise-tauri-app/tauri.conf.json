@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "identifier": "com.premise.tauri-app",
   "build": {
-    "frontendDist": "../placeholder"
+    "frontendDist": "placeholder"
   },
   "app": {
     "windows": [

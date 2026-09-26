@@ -12,7 +12,7 @@ A Rust/Cargo template registry for [Premise](https://github.com/cloudvoyant/prem
 | `premise-ratatui-app` | app  | A Ratatui terminal app that renders `hello premise-ratatui` centered and exits on Ctrl-C. |
 | `premise-tauri-app`   | app  | A Tauri v2 desktop shell with a bundled HTML/CSS placeholder and native installers.       |
 
-The first four templates are standalone Cargo packages. The Tauri template uses the conventional nested `src-tauri/` package layout. The repository-root `Cargo.toml` and `Cargo.lock` form the aggregate source and release workspace, but they are not copied into generated clients. `template_registry.workspace_files` declares `.gitignore` as the only shared client-root file. Each selected template owns its Rust tools, package metadata, and contract tasks under `apps/<name>` or `libs/<name>`.
+All five templates are standalone Cargo packages, including the Tauri template. The repository-root `Cargo.toml` and `Cargo.lock` form the aggregate source and release workspace, but they are not copied into generated clients. `template_registry.workspace_files` declares `.gitignore` as the only shared client-root file. Each selected template owns its Rust tools, package metadata, and contract tasks under `apps/<name>` or `libs/<name>`.
 
 ## Requirements
 

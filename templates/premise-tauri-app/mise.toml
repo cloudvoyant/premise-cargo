@@ -29,7 +29,7 @@ if command -v apt-get >/dev/null 2>&1; then
 else
   echo "install: apt-get unavailable; skipping Debian/Ubuntu native packages"
 fi
-cargo fetch --manifest-path src-tauri/Cargo.toml
+cargo fetch --manifest-path Cargo.toml
 '''
 
 [tasks.build]
@@ -39,28 +39,28 @@ run = "cargo tauri build --debug --no-bundle"
 
 [tasks.clean]
 description = "Remove build artifacts"
-run = "cargo clean --manifest-path src-tauri/Cargo.toml"
+run = "cargo clean --manifest-path Cargo.toml"
 
 [tasks.test]
 description = "Run the Rust test suite"
 depends = ["install"]
-run = "cargo test --manifest-path src-tauri/Cargo.toml"
+run = "cargo test --manifest-path Cargo.toml"
 
 [tasks.lint]
 description = "Lint with clippy (deny warnings)"
-run = "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings"
+run = "cargo clippy --manifest-path Cargo.toml --all-targets --all-features -- -D warnings"
 
 [tasks."lint:fix"]
 description = "Auto-fix clippy findings"
-run = "cargo clippy --manifest-path src-tauri/Cargo.toml --fix --allow-dirty --allow-staged --allow-no-vcs"
+run = "cargo clippy --manifest-path Cargo.toml --fix --allow-dirty --allow-staged --allow-no-vcs"
 
 [tasks.format]
 description = "Format Rust sources"
-run = "cargo fmt --manifest-path src-tauri/Cargo.toml --all"
+run = "cargo fmt --manifest-path Cargo.toml --all"
 
 [tasks."format:check"]
 description = "Check formatting without modifying files"
-run = "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check"
+run = "cargo fmt --manifest-path Cargo.toml --all --check"
 
 [tasks.env-pull]
 description = "Pull external environment configuration"
@@ -126,7 +126,7 @@ esac
 cargo tauri build --bundles "$bundles" --config "{\"version\":\"${version}\"}"
 assets_file="$(mktemp)"
 trap 'rm -f "$assets_file"' EXIT
-find src-tauri/target/release/bundle -type f | grep -E "$asset_pattern" > "$assets_file" || true
+find target/release/bundle -type f | grep -E "$asset_pattern" > "$assets_file" || true
 if [ ! -s "$assets_file" ]; then
   echo "error: no installable assets found for $os" >&2
   exit 1
