@@ -9,6 +9,7 @@
 [tools]
 rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
 "cargo:cargo-zigbuild" = "0.23.4"
+"aqua:rhysd/actionlint" = "1.7.7"
 zig = "0.16.0"
 
 [tasks."template-test"]
@@ -26,8 +27,23 @@ echo "registry structure valid"
 '''
 
 [tasks.test]
-description = "Run the registry contract (every declared template)"
-run = "mise run template-test"
+description = "Run release and registry contracts"
+run = '''
+set -eu
+bash scripts/test-resolve-stable-release.sh
+publish_output="$(mktemp)"
+trap 'rm -f "$publish_output"' EXIT
+if (
+  cd templates/premise-tauri-app
+  unset PREMISE_TEMPLATE_TEST RELEASE_VERSION GITHUB_REPOSITORY PREMISE_GITHUB_TOKEN GH_TOKEN GITHUB_TOKEN
+  mise run publish
+) >"$publish_output" 2>&1; then
+  echo "error: Tauri publish accepted missing release context" >&2
+  exit 1
+fi
+grep -F "error: RELEASE_VERSION must be a stable SemVer without a leading v" "$publish_output" >/dev/null
+mise run template-test
+'''
 
 [tasks.format]
 description = "Format registry mise configuration"
@@ -38,10 +54,11 @@ description = "Check registry mise configuration formatting"
 run = "mise fmt --check"
 
 [tasks.lint]
-description = "Validate registry configuration"
+description = "Validate registry and workflow configuration"
 run = '''
 set -eu
 mise fmt --check
+actionlint
 [ -f premise.yaml ] || { echo "error: missing premise.yaml" >&2; exit 1; }
 echo "registry config valid"
 '''

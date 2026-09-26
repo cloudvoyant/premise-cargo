@@ -4,5 +4,6 @@ members = [
     "templates/premise-rust-app",
     "templates/premise-clap-cli",
     "templates/premise-ratatui-app",
+    "templates/premise-tauri-app/src-tauri",
 ]
 resolver = "3"
