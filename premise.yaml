@@ -2,6 +2,8 @@ workspace:
   name: premise-cargo
   kind: template-registry
   schema-version: "0.2"
+  package_managers:
+    - cargo
   providers:
     ci: github
     tools: mise
