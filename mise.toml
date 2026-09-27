@@ -6,9 +6,15 @@
 # Generated projects receive only files declared in premise.yaml under
 # template_registry.workspace_files. Each template owns its tools and tasks.
 
+monorepo_root = true
+
+[monorepo]
+config_roots = ["templates/premise-*", "apps/*", "libs/*"]
+
 [tools]
 rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
 "cargo:cargo-zigbuild" = "0.23.4"
+"aqua:rhysd/actionlint" = "1.7.7"
 zig = "0.16.0"
 
 [tasks."template-test"]
@@ -26,7 +32,7 @@ echo "registry structure valid"
 '''
 
 [tasks.test]
-description = "Run the registry contract (every declared template)"
+description = "Run release and registry contracts"
 run = "mise run template-test"
 
 [tasks.format]
@@ -38,10 +44,11 @@ description = "Check registry mise configuration formatting"
 run = "mise fmt --check"
 
 [tasks.lint]
-description = "Validate registry configuration"
+description = "Validate registry and workflow configuration"
 run = '''
 set -eu
 mise fmt --check
+actionlint
 [ -f premise.yaml ] || { echo "error: missing premise.yaml" >&2; exit 1; }
 echo "registry config valid"
 '''

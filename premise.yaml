@@ -2,6 +2,8 @@ workspace:
   name: premise-cargo
   kind: template-registry
   schema-version: "0.2"
+  package_managers:
+    - cargo
   providers:
     ci: github
     tools: mise
@@ -49,3 +51,16 @@ template_registry:
           populate: name
       substitutions:
         premise-ratatui-app: name
+    - name: premise-tauri-app
+      kind: app
+      path: templates/premise-tauri-app
+      questions:
+        - prompt: "App name:"
+          type: string
+          populate: name
+        - prompt: "Bundle identifier:"
+          type: string
+          populate: identifier
+      substitutions:
+        premise-tauri-app: name
+        com.premise.tauri-app: identifier
