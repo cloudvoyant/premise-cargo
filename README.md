@@ -27,7 +27,7 @@ Premise and Mise provision the Rust toolchain used for registry validation. No R
 pm generate
 ```
 
-Choose `premise-rust-lib`, `premise-rust-app`, `premise-clap-cli`, `premise-ratatui-app`, or `premise-tauri-app`. The Tauri template asks `App name:` and `Bundle identifier:`, then generates a placeholder-only desktop shell. Connecting Svelte, TanStack, or another frontend is intentionally out of scope.
+Choose `premise-rust-lib`, `premise-rust-app`, `premise-clap-cli`, `premise-ratatui-app`, or `premise-tauri-app`. The Tauri template asks `App name:` and `Bundle identifier:`, then generates a placeholder-only desktop shell. It starts with white text on a black background and no card or accent colors. On macOS, its transparent native title bar shares the black window background; other platforms retain native title bars. Change `placeholder/styles.css` and `tauri.conf.json` together if you change the background. Connecting Svelte, TanStack, or another frontend is intentionally out of scope.
 
 ## Development
 

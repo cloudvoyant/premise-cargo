@@ -12,7 +12,10 @@
         "label": "main",
         "title": "premise-tauri-app",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "theme": "Dark",
+        "titleBarStyle": "Transparent",
+        "backgroundColor": "#000000"
       }
     ],
     "security": {
