@@ -6,6 +6,11 @@
 # Generated projects receive only files declared in premise.yaml under
 # template_registry.workspace_files. Each template owns its tools and tasks.
 
+monorepo_root = true
+
+[monorepo]
+config_roots = ["templates/premise-*", "apps/*", "libs/*"]
+
 [tools]
 rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
 "cargo:cargo-zigbuild" = "0.23.4"
