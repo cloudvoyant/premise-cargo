@@ -37,7 +37,7 @@ The root is a template registry and an aggregate Cargo workspace used for source
 1. Edit one or more templates under `templates/`.
 2. Run `pm ci flow on-commit --release none`.
 3. Check registry formatting with `mise fmt --check`.
-4. Inspect the generated release matrix with `pm release snapshot` when release configuration changes.
+4. Build the release artifact matrix with `pm release --build` when release configuration changes. This does not tag or publish.
 
 Each template implements the required `install` task. The four direct Cargo templates use `cargo fetch`. The Tauri template first runs `mise bootstrap packages apply --manager apt` when `apt-get` is available, then fetches its Cargo dependencies. Premise runs `install` after Mise tool setup and validates each template contract independently. To work directly on one template, change into its directory and run its contract tasks:
 
