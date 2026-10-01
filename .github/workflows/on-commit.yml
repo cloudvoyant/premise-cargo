@@ -28,9 +28,10 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow
-        uses: cloudvoyant/premise@v0
+        uses: cloudvoyant/premise@feature/diff-187
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
           flow: on-commit
+          release: ${{ github.event_name == 'push' && 'auto' || 'none' }}
           install-premise: build
