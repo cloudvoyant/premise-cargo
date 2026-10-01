@@ -17,6 +17,10 @@ rust = { version = "1.88", components = "rustfmt,clippy,rust-analyzer" }
 "aqua:rhysd/actionlint" = "1.7.7"
 zig = "0.16.0"
 
+[tasks.install]
+description = "Fetch dependencies for the aggregate Cargo workspace"
+run = "cargo fetch --locked"
+
 [tasks."template-test"]
 description = "Run every declared template through the Premise contract"
 run = "pm template test"
