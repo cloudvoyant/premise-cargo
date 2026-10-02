@@ -53,8 +53,6 @@ template_registry:
         premise-ratatui-app: name
     - name: premise-tauri-app
       kind: app
-      # Native installers are published by the dedicated Tauri workflow job.
-      release_artifacts: false
       path: templates/premise-tauri-app
       questions:
         - prompt: "App name:"

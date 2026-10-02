@@ -56,12 +56,12 @@ A generated package creates its own lockfile when used without a client-root Car
 
 The workflows contain checkout plus the Premise action. The action sets up Mise, builds the pinned Premise revision, and invokes one flow:
 
-- `on-commit` validates pull requests and unmarked feature pushes.
+- `on-commit` validates pull requests and unmarked feature pushes, including `pm release --build` for the release artifact dry build.
 - A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then delegates package selection to Premise's Cargo package-manager plugin, which invokes eligible templates' `publish:rc` tasks. Pull requests and unmarked pushes run without a Cargo token and never enter publication.
 - `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow. After that release job finds exactly one strict stable tag at the checked-out commit, a native Tauri matrix runs on Ubuntu 22.04, macOS 14, and Windows 2022. A commit with no stable tag skips the matrix; a rerun reuses the same tag and safely replaces installer assets.
 - `on-release` runs manual stage or production deployment conventions.
 
-The registry intentionally does not define root `on-commit` or `on-merge` overrides. Premise's default template-registry flow owns lifecycle orchestration, guarded RC publication, and stable publication.
+The registry defines a root `on-commit` override that reuses the template-registry contract through its existing validation tasks and runs `pm release --build`; this keeps the release artifact dry build in the Premise on-commit flow. After that override, Premise still owns guarded RC publication, and it owns the stable `on-merge` flow.
 
 ## Publishing
 
@@ -81,7 +81,7 @@ Premise's Cargo package-manager plugin selects matching direct packages whose `[
 
 GoReleaser builds archives for `premise-rust-app`, `premise-clap-cli`, and `premise-ratatui-app` for Linux and macOS on x86_64 and aarch64. `premise-rust-lib` publishes only to crates.io. Premise generates temporary GoReleaser configuration and removes it after the run.
 
-The Tauri template does not enter Cargo registry or generic GoReleaser publication because it declares `publish = false`. Its own stable `mise run publish` task builds only the current platform's installable bundles and uploads them to the existing `v$RELEASE_VERSION` GitHub Release with `gh release upload --clobber`. Premise remains responsible for release intent and the prepared GitHub Release; the repository workflow invokes the public template task once per native runner. If Premise skips stable publication, no native jobs run. If the workflow reruns for an existing stable tag, the same jobs safely replace assets with matching names. `mise run publish:rc` is an explicit successful no-op. A generated Tauri project supports `install`, `build`, `clean`, `test`, `lint`, `lint:fix`, `format`, `format:check`, `env-pull`, `publish:rc`, `publish`, `run`, `dev`, `deploy`, and `e2e`. It contains only the committed HTML/CSS placeholder; connecting another frontend is deferred.
+The Tauri template's `publish = false` keeps it out of Cargo registry publication. Premise recognizes the root `tauri.conf.json` and excludes the template from generic GoReleaser archives. Its public stable `mise run publish` task still builds current-platform installers and uploads them to the existing `v$RELEASE_VERSION` GitHub Release with `gh release upload --clobber`; the native OS matrix invokes that task once per runner. Premise remains responsible for release intent and the prepared GitHub Release. If Premise skips stable publication, no native jobs run. If the workflow reruns for an existing stable tag, the same jobs safely replace assets with matching names. `mise run publish:rc` is an explicit successful no-op. A generated Tauri project supports `install`, `build`, `clean`, `test`, `lint`, `lint:fix`, `format`, `format:check`, `env-pull`, `publish:rc`, `publish`, `run`, `dev`, `deploy`, and `e2e`. It contains only the committed HTML/CSS placeholder; connecting another frontend is deferred.
 
 ### Credentials
 
