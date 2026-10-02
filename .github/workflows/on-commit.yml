@@ -28,9 +28,30 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow
-        uses: cloudvoyant/premise@v0.4.2
+        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
           flow: on-commit
           install-premise: build
+
+  release-artifacts:
+    name: Build release artifacts without publishing
+    if: github.event_name == 'pull_request'
+    runs-on: macos-14
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Validate the templates with Premise
+        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
+        with:
+          flow: on-commit
+          install-premise: build
+
+      - name: Build release artifacts without tagging or publishing
+        run: pm release --build
