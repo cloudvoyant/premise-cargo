@@ -73,9 +73,20 @@ depends = ["install"]
 usage = 'arg "<mode>" { choices "build" "publish" "publish:rc" }'
 # WiX/MSI rejects the rc.<number> SemVer suffix; RC builds use NSIS only.
 run = [
-  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}cargo tauri build --debug --no-bundle{% else %}pm ci platform-config {{ usage.mode }}{% endif %}''',
-  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}cargo tauri build --bundles {% if os() == "windows" %}{% if usage.mode == "publish:rc" %}nsis{% elif usage.mode == "build" and env.PREMISE_RELEASE_CHANNEL == "rc" %}nsis{% else %}msi,nsis{% endif %}{% elif os() == "macos" %}dmg{% else %}deb,appimage{% endif %} --config target/premise-release-config.json{% endif %}''',
-  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}pm ci platform-files {{ usage.mode }} --source cargo:release/bundle --suffixes .deb,.AppImage,.dmg,.msi,.exe{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}cargo tauri build --debug --no-bundle{% else %}set -eu
+: "${RELEASE_VERSION:?RELEASE_VERSION is required}"
+: "${PREMISE_ARTIFACT_DIR:?PREMISE_ARTIFACT_DIR is required}"
+mkdir -p target
+printf '{"version":"%s"}\n' "$RELEASE_VERSION" > target/premise-release-config.json
+mkdir -p "$PREMISE_ARTIFACT_DIR"{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}cargo tauri build --bundles {% if os() == "windows" %}{% if usage.mode == "publish:rc" %}nsis{% elif env.PREMISE_RELEASE_CHANNEL == "rc" %}nsis{% else %}msi,nsis{% endif %}{% elif os() == "macos" %}dmg{% else %}deb,appimage{% endif %} --config target/premise-release-config.json{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}set -eu
+bundle_dir="$(find ../.. -type d -path '*/target/release/bundle' -print -quit)"
+[ -n "$bundle_dir" ]
+for suffix in deb AppImage dmg msi exe; do
+  find "$bundle_dir" -type f -name "*.$suffix" -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;
+done
+{% endif %}''',
 ]
 
 [tasks."release:build"]

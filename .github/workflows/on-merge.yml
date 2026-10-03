@@ -32,7 +32,7 @@ jobs:
 
       - name: Run on-merge flow
         id: premise
-        uses: cloudvoyant/premise@v0.4.2
+        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}

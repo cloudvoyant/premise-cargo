@@ -63,6 +63,18 @@ The workflows contain checkout plus the Premise action. The action sets up Mise,
 
 The registry defines a root `on-commit` override that reuses the template-registry contract through its existing validation tasks and runs `pm release --build`; this keeps the release artifact dry build in the Premise on-commit flow. After that override, Premise still owns guarded RC publication, and it owns the stable `on-merge` flow.
 
+## Complete CI flow
+
+`pm ci flow on-commit` is the complete local validation flow. It runs the root hook once, then runs eligible template checks and quality tasks. On a single-host machine, unfiltered execution runs current-host single-platform projects and reports other platforms as exclusions. For Tauri, select one native platform explicitly when testing a host:
+
+```bash
+pm ci flow on-commit --project premise-tauri-app --platform macos --output-dir "$(mktemp -d)"
+```
+
+Tauri declares `linux`, `macos`, and `windows` for checks and native release work. Its normal `install`, Cargo build, and test tasks remain local-path compatible. `release:build` consumes `RELEASE_VERSION`, `PREMISE_RELEASE_CHANNEL`, and the absolute `PREMISE_ARTIFACT_DIR`; it emits installers only. Linux produces Debian/AppImage files, macOS produces DMG files, and Windows produces NSIS for RC or MSI plus NSIS for stable. No template task creates tags, releases, uploads, or needs publishing credentials.
+
+When selected work spans runner operating systems, GitHub expands one matrix over the selected project/platform union. Each row invokes the same scoped Premise flow, uploads native files, and converges before one release publication command. Package publication follows release success in its protected environment. The on-commit and on-merge root tasks are once-only registry hooks; they do not repeat template flows. Publication and cache performance remain unverified until hosted rollout in Phase 7. The on-deploy workflow remains independent.
+
 ## Publishing
 
 ### Versioning
