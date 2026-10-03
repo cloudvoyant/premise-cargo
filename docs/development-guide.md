@@ -56,12 +56,24 @@ A generated package creates its own lockfile when used without a client-root Car
 
 The workflows contain checkout plus the Premise action. The action sets up Mise, builds the pinned Premise revision, and invokes one flow:
 
-- `on-commit` validates pull requests and unmarked feature pushes.
+- `on-commit` validates pull requests and unmarked feature pushes, including `pm release --build` for the release artifact dry build.
 - A non-main push whose HEAD contains `[publish-rc]` runs the same `on-commit` flow with the crates.io token. The flow validates first and then delegates package selection to Premise's Cargo package-manager plugin, which invokes eligible templates' `publish:rc` tasks. Pull requests and unmarked pushes run without a Cargo token and never enter publication.
 - `on-merge` runs the default template-registry lifecycle, then prepares the stable tag, builds the complete Rust archive matrix, publishes GitHub archives, and publishes crates in one Premise-owned flow. After that release job finds exactly one strict stable tag at the checked-out commit, a native Tauri matrix runs on Ubuntu 22.04, macOS 14, and Windows 2022. A commit with no stable tag skips the matrix; a rerun reuses the same tag and safely replaces installer assets.
 - `on-release` runs manual stage or production deployment conventions.
 
-The registry intentionally does not define root `on-commit` or `on-merge` overrides. Premise's default template-registry flow owns lifecycle orchestration, guarded RC publication, and stable publication.
+The registry defines a root `on-commit` override that reuses the template-registry contract through its existing validation tasks and runs `pm release --build`; this keeps the release artifact dry build in the Premise on-commit flow. After that override, Premise still owns guarded RC publication, and it owns the stable `on-merge` flow.
+
+## Complete CI flow
+
+`pm ci flow on-commit` is the complete local validation flow. It runs the root hook once, then runs eligible template checks and quality tasks. On a single-host machine, unfiltered execution runs current-host single-platform projects and reports other platforms as exclusions. For Tauri, select one native platform explicitly when testing a host:
+
+```bash
+pm ci flow on-commit --project premise-tauri-app --platform macos --output-dir "$(mktemp -d)"
+```
+
+Tauri declares `linux`, `macos`, and `windows` for checks and native release work. Its normal `install`, Cargo build, and test tasks remain local-path compatible. `release:build` consumes `RELEASE_VERSION`, `PREMISE_RELEASE_CHANNEL`, and the absolute `PREMISE_ARTIFACT_DIR`; it emits installers only. Linux produces Debian/AppImage files, macOS produces DMG files, and Windows produces NSIS for RC or MSI plus NSIS for stable. No template task creates tags, releases, uploads, or needs publishing credentials.
+
+When selected work spans runner operating systems, GitHub expands one matrix over the selected project/platform union. Each row invokes the same scoped Premise flow, uploads native files, and converges before one release publication command. Package publication follows release success in its protected environment. The on-commit and on-merge root tasks are once-only registry hooks; they do not repeat template flows. Publication and cache performance remain unverified until hosted rollout in Phase 7. The on-deploy workflow remains independent.
 
 ## Publishing
 
@@ -69,7 +81,7 @@ The registry intentionally does not define root `on-commit` or `on-merge` overri
 
 Premise calculates versions with the svu Go SDK from the repository's stable `vMAJOR.MINOR.PATCH` tags. A `v0.0.0` bootstrap tag must exist before CI runs. The repository does not contain `.svu.yml` or `.goreleaser.yml`.
 
-All four crates move together. RC versions use `MAJOR.MINOR.PATCH-rc.<github run number>` without a Git tag. Stable releases use strict `vMAJOR.MINOR.PATCH` repository tags.
+All four crates move together. RC versions use `MAJOR.MINOR.PATCH-rc.<github run number>`. Crate publication does not create a tag. When native installers succeed, the platform workflow creates a matching `v...-rc...` tag and GitHub prerelease at the triggering commit. Stable releases use strict `vMAJOR.MINOR.PATCH` repository tags.
 
 ### Package Tasks
 
@@ -81,7 +93,7 @@ Premise's Cargo package-manager plugin selects matching direct packages whose `[
 
 GoReleaser builds archives for `premise-rust-app`, `premise-clap-cli`, and `premise-ratatui-app` for Linux and macOS on x86_64 and aarch64. `premise-rust-lib` publishes only to crates.io. Premise generates temporary GoReleaser configuration and removes it after the run.
 
-The Tauri template does not enter Cargo registry or generic GoReleaser publication because it declares `publish = false`. Its own stable `mise run publish` task builds only the current platform's installable bundles and uploads them to the existing `v$RELEASE_VERSION` GitHub Release with `gh release upload --clobber`. Premise remains responsible for release intent and the prepared GitHub Release; the repository workflow invokes the public template task once per native runner. If Premise skips stable publication, no native jobs run. If the workflow reruns for an existing stable tag, the same jobs safely replace assets with matching names. `mise run publish:rc` is an explicit successful no-op. A generated Tauri project supports `install`, `build`, `clean`, `test`, `lint`, `lint:fix`, `format`, `format:check`, `env-pull`, `publish:rc`, `publish`, `run`, `dev`, `deploy`, and `e2e`. It contains only the committed HTML/CSS placeholder; connecting another frontend is deferred.
+The Tauri template's `publish = false` keeps it out of Cargo registry publication. Premise recognizes the root `tauri.conf.json` and excludes the template from generic GoReleaser archives. A shared `release` task in the template's `mise.toml` accepts `build`, `publish`, or `publish:rc`. Its `release:build` wrapper builds native installers on the current OS, then hands the files to Premise's generic file collector; it needs no GitHub token. The direct `publish` and `publish:rc` wrappers remain available to upload current-platform installers to an existing release or prerelease. The marked-commit and merge workflows call Premise's reusable platform workflow only after the corresponding release plan succeeds. That workflow builds on Linux, macOS, and Windows, then creates or reuses the GitHub Release and uploads all installers in one job. Windows RC builds use NSIS only because WiX/MSI rejects `rc.<number>` versions; stable builds retain both MSI and NSIS. It also creates a release for a Tauri-only repository when GoReleaser has no archives. Reruns reject tags pointing at a different commit and replace only matching asset names. Future Electron or C++ projects can use the same reusable workflow by defining a `release:build` task that writes to `PREMISE_ARTIFACT_DIR`. Docker registry publishing is separate. A generated Tauri project also supports `install`, `build`, `clean`, `test`, `lint`, `lint:fix`, `format`, `format:check`, `env-pull`, `run`, `dev`, `deploy`, and `e2e`. It contains only the committed HTML/CSS placeholder; connecting another frontend is deferred.
 
 ### Credentials
 

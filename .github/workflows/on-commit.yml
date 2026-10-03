@@ -16,9 +16,9 @@ jobs:
   verify:
     name: Test, lint, and check formatting
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'pull_request' ||
-      github.event.before != '0000000000000000000000000000000000000000'
+    outputs:
+      rc_version: ${{ steps.premise.outputs.rc_version }}
+      should_publish_rc: ${{ steps.premise.outputs.should_publish_rc }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -28,9 +28,25 @@ jobs:
           persist-credentials: false
 
       - name: Run on-commit flow
-        uses: cloudvoyant/premise@v0.4.2
+        id: premise
+        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
         env:
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
         with:
           flow: on-commit
           install-premise: build
+
+  platform-rc:
+    name: Publish native RC installers
+    needs: verify
+    if: >-
+      github.event_name == 'push' &&
+      needs.verify.outputs.should_publish_rc == 'true'
+    permissions:
+      contents: write
+    uses: cloudvoyant/premise/.github/workflows/release-platform.yml@fix/diff-191-release-artifacts
+    with:
+      project: premise-tauri-app
+      channel: rc
+      version: ${{ needs.verify.outputs.rc_version }}
+      premise-ref: fix/diff-191-release-artifacts

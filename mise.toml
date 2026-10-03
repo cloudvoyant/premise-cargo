@@ -60,3 +60,11 @@ echo "registry config valid"
 [tasks.clean]
 description = "Remove registry artifacts"
 run = "true"
+
+[tasks."on-commit"]
+description = "Run once-only registry checks for the complete Premise flow"
+run = ["mise run install", "mise run build", "mise run lint"]
+
+[tasks."on-merge"]
+description = "Run once-only registry checks for the complete Premise flow"
+run = ["mise run install", "mise run build", "mise run lint"]

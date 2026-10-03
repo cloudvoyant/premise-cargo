@@ -32,7 +32,7 @@ jobs:
 
       - name: Run on-merge flow
         id: premise
-        uses: cloudvoyant/premise@v0.4.2
+        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
@@ -40,41 +40,15 @@ jobs:
           flow: on-merge
           install-premise: build
 
-  tauri:
-    name: Publish Tauri installers (${{ matrix.os }})
+  platform-stable:
+    name: Publish native stable installers
     needs: release
     if: needs.release.outputs.should_publish == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-22.04
-          - macos-14
-          - windows-2022
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Install Mise
-        uses: jdx/mise-action@v3
-        with:
-          install: false
-
-      - name: Install Tauri tools
-        shell: bash
-        working-directory: templates/premise-tauri-app
-        run: mise install
-
-      - name: Publish native installers
-        shell: bash
-        working-directory: templates/premise-tauri-app
-        env:
-          RELEASE_VERSION: ${{ needs.release.outputs.version }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-        run: mise run publish
+    permissions:
+      contents: write
+    uses: cloudvoyant/premise/.github/workflows/release-platform.yml@fix/diff-191-release-artifacts
+    with:
+      project: premise-tauri-app
+      channel: stable
+      version: ${{ needs.release.outputs.version }}
+      premise-ref: fix/diff-191-release-artifacts
