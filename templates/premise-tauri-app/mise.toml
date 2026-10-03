@@ -71,9 +71,10 @@ run = 'echo "env-pull: nothing to pull"'
 description = "Build native installers and hand them off for the requested mode"
 depends = ["install"]
 usage = 'arg "<mode>" { choices "build" "publish" "publish:rc" }'
+# WiX/MSI rejects the rc.<number> SemVer suffix; RC builds use NSIS only.
 run = [
   '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}cargo tauri build --debug --no-bundle{% else %}pm ci platform-config {{ usage.mode }}{% endif %}''',
-  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}cargo tauri build --bundles {% if os() == "windows" %}msi,nsis{% elif os() == "macos" %}dmg{% else %}deb,appimage{% endif %} --config target/premise-release-config.json{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}cargo tauri build --bundles {% if os() == "windows" %}{% if usage.mode == "publish:rc" %}nsis{% elif usage.mode == "build" and env.PREMISE_RELEASE_CHANNEL == "rc" %}nsis{% else %}msi,nsis{% endif %}{% elif os() == "macos" %}dmg{% else %}deb,appimage{% endif %} --config target/premise-release-config.json{% endif %}''',
   '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}pm ci platform-files {{ usage.mode }} --source cargo:release/bundle --suffixes .deb,.AppImage,.dmg,.msi,.exe{% endif %}''',
 ]
 
