@@ -10,45 +10,22 @@ name: On Merge
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: stable-release
   cancel-in-progress: false
 
+# Temporary feature-branch premise-ref is retained only for draft testing.
+# Merge is blocked until this is replaced with an immutable released tag.
 jobs:
-  release:
-    name: Validate and publish
-    runs-on: macos-14
-    outputs:
-      version: ${{ steps.premise.outputs.version }}
-      should_publish: ${{ steps.premise.outputs.should_publish }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Run on-merge flow
-        id: premise
-        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
-        with:
-          flow: on-merge
-          install-premise: build
-
-  platform-stable:
-    name: Publish native stable installers
-    needs: release
-    if: needs.release.outputs.should_publish == 'true'
-    permissions:
-      contents: write
+  flow:
+    name: Run complete on-merge flow
     uses: cloudvoyant/premise/.github/workflows/release-platform.yml@fix/diff-191-release-artifacts
+    secrets:
+      CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
     with:
-      project: premise-tauri-app
-      channel: stable
-      version: ${{ needs.release.outputs.version }}
+      flow: on-merge
+      release: auto
       premise-ref: fix/diff-191-release-artifacts
+      package-environment: crates-io

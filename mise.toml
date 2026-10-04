@@ -63,8 +63,18 @@ run = "true"
 
 [tasks."on-commit"]
 description = "Run once-only registry checks for the complete Premise flow"
-run = ["mise run install", "mise run build", "mise run lint"]
+run = [
+  "mise run install",
+  "mise run build",
+  "mise run lint",
+  "pm release --build",
+]
 
 [tasks."on-merge"]
 description = "Run once-only registry checks for the complete Premise flow"
-run = ["mise run install", "mise run build", "mise run lint"]
+run = [
+  "mise run install",
+  "mise run build",
+  "mise run lint",
+  "pm release --build",
+]

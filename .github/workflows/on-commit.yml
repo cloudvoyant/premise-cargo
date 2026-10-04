@@ -10,43 +10,19 @@ name: On Commit
       - main
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
+# Temporary feature-branch premise-ref is retained only for draft testing.
+# Merge is blocked until this is replaced with an immutable released tag.
 jobs:
-  verify:
-    name: Test, lint, and check formatting
-    runs-on: ubuntu-latest
-    outputs:
-      rc_version: ${{ steps.premise.outputs.rc_version }}
-      should_publish_rc: ${{ steps.premise.outputs.should_publish_rc }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Run on-commit flow
-        id: premise
-        uses: cloudvoyant/premise@fix/diff-191-release-artifacts
-        env:
-          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
-        with:
-          flow: on-commit
-          install-premise: build
-
-  platform-rc:
-    name: Publish native RC installers
-    needs: verify
-    if: >-
-      github.event_name == 'push' &&
-      needs.verify.outputs.should_publish_rc == 'true'
-    permissions:
-      contents: write
+  flow:
+    name: Run complete on-commit flow
     uses: cloudvoyant/premise/.github/workflows/release-platform.yml@fix/diff-191-release-artifacts
+    secrets:
+      CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
     with:
-      project: premise-tauri-app
-      channel: rc
-      version: ${{ needs.verify.outputs.rc_version }}
+      flow: on-commit
+      release: auto
       premise-ref: fix/diff-191-release-artifacts
+      package-environment: crates-io-rc
