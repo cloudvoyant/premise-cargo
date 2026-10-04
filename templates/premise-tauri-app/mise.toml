@@ -90,6 +90,34 @@ bundle_dir="$target_dir/release/bundle"
 {% if os() == "linux" %}find "$bundle_dir" -type f \( -name '*.deb' -o -name '*.AppImage' \) -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% elif os() == "macos" %}find "$bundle_dir" -type f -name '*.dmg' -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% elif usage.mode == "publish:rc" or env.PREMISE_RELEASE_CHANNEL == "rc" %}find "$bundle_dir" -type f -name '*.exe' -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% else %}find "$bundle_dir" -type f \( -name '*.msi' -o -name '*.exe' \) -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% endif %}
 {% endif %}''',
 ]
+# Windows runs Mise tasks in PowerShell, not Bash. Keep the same artifact
+# contract without treating `set -eu` as a PowerShell environment variable.
+run_windows = [
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}cargo tauri build --debug --no-bundle{% else %}$ErrorActionPreference = 'Stop'
+if (-not $env:RELEASE_VERSION) { throw 'RELEASE_VERSION is required' }
+if (-not $env:PREMISE_ARTIFACT_DIR) { throw 'PREMISE_ARTIFACT_DIR is required' }
+New-Item -ItemType Directory -Force -Path target, $env:PREMISE_ARTIFACT_DIR | Out-Null
+'{"version":"' + $env:RELEASE_VERSION + '"}' | Set-Content -Encoding utf8 target/premise-release-config.json{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}Write-Output 'release test mode'{% else %}$ErrorActionPreference = 'Stop'
+$metadata = cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
+$bundleDir = Join-Path $metadata.target_directory 'release/bundle'
+if (Test-Path -LiteralPath $bundleDir) { Remove-Item -LiteralPath $bundleDir -Recurse -Force }
+cargo tauri build --bundles {% if usage.mode == "publish:rc" or env.PREMISE_RELEASE_CHANNEL == "rc" %}nsis{% else %}msi,nsis{% endif %} --config target/premise-release-config.json
+if ($LASTEXITCODE -ne 0) { throw 'cargo tauri build failed' }{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}Write-Output 'release test mode'{% else %}$ErrorActionPreference = 'Stop'
+$metadata = cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
+$bundleDir = Join-Path $metadata.target_directory 'release/bundle'
+if (-not (Test-Path -LiteralPath $bundleDir)) { throw 'release bundle directory is missing' }
+$extensions = {% if usage.mode == "publish:rc" or env.PREMISE_RELEASE_CHANNEL == "rc" %}@('.exe'){% else %}@('.msi', '.exe'){% endif %}
+$files = @(Get-ChildItem -LiteralPath $bundleDir -Recurse -File | Where-Object { $_.Extension -in $extensions })
+if ($files.Count -eq 0) { throw 'no installers were built' }
+foreach ($file in $files) {
+  if ($file.Length -eq 0) { throw "empty installer: $($file.FullName)" }
+  Copy-Item -LiteralPath $file.FullName -Destination $env:PREMISE_ARTIFACT_DIR
+}{% endif %}''',
+]
 
 [tasks."release:build"]
 description = "Build native installers for a platform release"
