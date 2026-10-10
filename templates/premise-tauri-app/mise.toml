@@ -31,6 +31,7 @@ else
 fi
 cargo fetch --manifest-path Cargo.toml
 '''
+run_windows = "cargo fetch --manifest-path Cargo.toml"
 
 [tasks.build]
 description = "Compile the Tauri application without bundling"
@@ -66,75 +67,72 @@ run = "cargo fmt --manifest-path Cargo.toml --all --check"
 description = "Pull external environment configuration"
 run = 'echo "env-pull: nothing to pull"'
 
-[tasks."publish:rc"]
-description = "Report that Tauri release-candidate artifacts are unsupported"
-run = 'echo "publish:rc: Tauri release-candidate artifacts are unsupported"'
+[tasks.release]
+description = "Build native installers and hand them off for the requested mode"
+depends = ["install"]
+usage = 'arg "<mode>" { choices "build" "publish" "publish:rc" }'
+# WiX/MSI rejects the rc.<number> SemVer suffix; RC builds use NSIS only.
+run = [
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}cargo tauri build --debug --no-bundle{% else %}set -eu
+: "${RELEASE_VERSION:?RELEASE_VERSION is required}"
+: "${PREMISE_ARTIFACT_DIR:?PREMISE_ARTIFACT_DIR is required}"
+mkdir -p target
+printf '{"version":"%s"}\n' "$RELEASE_VERSION" > target/premise-release-config.json
+mkdir -p "$PREMISE_ARTIFACT_DIR"{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}set -eu
+target_dir="$(cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | jq -r .target_directory)"
+rm -rf "$target_dir/release/bundle"
+cargo tauri build --bundles {% if os() == "windows" %}{% if usage.mode == "publish:rc" %}nsis{% elif env.PREMISE_RELEASE_CHANNEL == "rc" %}nsis{% else %}msi,nsis{% endif %}{% elif os() == "macos" %}dmg{% else %}deb,appimage{% endif %} --config target/premise-release-config.json{% endif %}''',
+  '''{% if env.PREMISE_TEMPLATE_TEST == "1" %}echo release test mode{% else %}set -eu
+target_dir="$(cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | jq -r .target_directory)"
+bundle_dir="$target_dir/release/bundle"
+[ -d "$bundle_dir" ]
+{% if os() == "linux" %}find "$bundle_dir" -type f \( -name '*.deb' -o -name '*.AppImage' \) -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% elif os() == "macos" %}find "$bundle_dir" -type f -name '*.dmg' -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% elif usage.mode == "publish:rc" or env.PREMISE_RELEASE_CHANNEL == "rc" %}find "$bundle_dir" -type f -name '*.exe' -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% else %}find "$bundle_dir" -type f \( -name '*.msi' -o -name '*.exe' \) -size +0c -exec cp "{}" "$PREMISE_ARTIFACT_DIR/" \;{% endif %}
+{% endif %}''',
+]
+# Mise defaults to cmd.exe on Windows. Shebangs select PowerShell for these
+# native scripts instead of running Bash syntax in cmd.exe.
+run_windows = [
+  '''#!/usr/bin/env pwsh
+{% if env.PREMISE_TEMPLATE_TEST == "1" %}cargo tauri build --debug --no-bundle{% else %}$ErrorActionPreference = 'Stop'
+if (-not $env:RELEASE_VERSION) { throw 'RELEASE_VERSION is required' }
+if (-not $env:PREMISE_ARTIFACT_DIR) { throw 'PREMISE_ARTIFACT_DIR is required' }
+New-Item -ItemType Directory -Force -Path target, $env:PREMISE_ARTIFACT_DIR | Out-Null
+'{"version":"' + $env:RELEASE_VERSION + '"}' | Set-Content -Encoding utf8 target/premise-release-config.json{% endif %}''',
+  '''#!/usr/bin/env pwsh
+{% if env.PREMISE_TEMPLATE_TEST == "1" %}Write-Output 'release test mode'{% else %}$ErrorActionPreference = 'Stop'
+$metadata = cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
+$bundleDir = Join-Path $metadata.target_directory 'release/bundle'
+if (Test-Path -LiteralPath $bundleDir) { Remove-Item -LiteralPath $bundleDir -Recurse -Force }
+cargo tauri build --bundles {% if usage.mode == "publish:rc" or env.PREMISE_RELEASE_CHANNEL == "rc" %}nsis{% else %}msi,nsis{% endif %} --config target/premise-release-config.json
+if ($LASTEXITCODE -ne 0) { throw 'cargo tauri build failed' }{% endif %}''',
+  '''#!/usr/bin/env pwsh
+{% if env.PREMISE_TEMPLATE_TEST == "1" %}Write-Output 'release test mode'{% else %}$ErrorActionPreference = 'Stop'
+$metadata = cargo metadata --manifest-path Cargo.toml --no-deps --format-version 1 | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
+$bundleDir = Join-Path $metadata.target_directory 'release/bundle'
+if (-not (Test-Path -LiteralPath $bundleDir)) { throw 'release bundle directory is missing' }
+$extensions = {% if usage.mode == "publish:rc" or env.PREMISE_RELEASE_CHANNEL == "rc" %}@('.exe'){% else %}@('.msi', '.exe'){% endif %}
+$files = @(Get-ChildItem -LiteralPath $bundleDir -Recurse -File | Where-Object { $_.Extension -in $extensions })
+if ($files.Count -eq 0) { throw 'no installers were built' }
+foreach ($file in $files) {
+  if ($file.Length -eq 0) { throw "empty installer: $($file.FullName)" }
+  Copy-Item -LiteralPath $file.FullName -Destination $env:PREMISE_ARTIFACT_DIR
+}{% endif %}''',
+]
+
+[tasks."release:build"]
+description = "Build native installers for a platform release"
+run = "mise run release -- build"
 
 [tasks.publish]
-description = "Build and upload stable native installers to a GitHub Release"
-depends = ["install"]
-run = '''
-set -eu
+description = "Build and upload stable installers to the existing GitHub Release"
+run = "mise run release -- publish"
 
-if [ "${PREMISE_TEMPLATE_TEST:-}" = "1" ]; then
-  version="${RELEASE_VERSION:-1.2.3}"
-  cargo tauri build --debug --no-bundle --config "{\"version\":\"${version}\"}"
-  echo "publish (test mode): would build native bundles for v${version} and upload only current-platform installers with gh release upload --clobber"
-  exit 0
-fi
-
-version="${RELEASE_VERSION:-}"
-if ! printf '%s\n' "$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(\+[0-9A-Za-z.-]+)?$'; then
-  echo "error: RELEASE_VERSION must be a stable SemVer without a leading v" >&2
-  exit 1
-fi
-
-repository="${GITHUB_REPOSITORY:-}"
-if [ -z "$repository" ]; then
-  echo "error: GITHUB_REPOSITORY must be owner/repository" >&2
-  exit 1
-fi
-
-token="${PREMISE_GITHUB_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
-if [ -z "$token" ]; then
-  echo "error: set PREMISE_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN" >&2
-  exit 1
-fi
-export GH_TOKEN="$token"
-
-tag="v${version}"
-os="$(uname -s)"
-case "$os" in
-  Linux)
-    bundles="deb,appimage"
-    asset_pattern='.*\.(deb|AppImage)$'
-    ;;
-  Darwin)
-    bundles="dmg"
-    asset_pattern='.*\.dmg$'
-    ;;
-  MINGW*|MSYS*|CYGWIN*)
-    bundles="msi,nsis"
-    asset_pattern='.*\.(msi|exe)$'
-    ;;
-  *)
-    echo "error: unsupported native bundle platform: $os" >&2
-    exit 1
-    ;;
-esac
-
-cargo tauri build --bundles "$bundles" --config "{\"version\":\"${version}\"}"
-assets_file="$(mktemp)"
-trap 'rm -f "$assets_file"' EXIT
-find target/release/bundle -type f | grep -E "$asset_pattern" > "$assets_file" || true
-if [ ! -s "$assets_file" ]; then
-  echo "error: no installable assets found for $os" >&2
-  exit 1
-fi
-while IFS= read -r asset; do
-  gh release upload "$tag" "$asset" --clobber --repo "$repository"
-done < "$assets_file"
-'''
+[tasks."publish:rc"]
+description = "Build and upload RC installers to an existing GitHub prerelease"
+run = "mise run release -- publish:rc"
 
 [tasks.run]
 description = "Run the Tauri application"

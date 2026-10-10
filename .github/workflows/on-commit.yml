@@ -10,27 +10,19 @@ name: On Commit
       - main
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
+# Temporary feature-branch premise-ref is retained only for draft testing.
+# Merge is blocked until this is replaced with an immutable released tag.
 jobs:
-  verify:
-    name: Test, lint, and check formatting
-    runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'pull_request' ||
-      github.event.before != '0000000000000000000000000000000000000000'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-
-      - name: Run on-commit flow
-        uses: cloudvoyant/premise@v0.4.2
-        env:
-          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
-        with:
-          flow: on-commit
-          install-premise: build
+  flow:
+    name: Run complete on-commit flow
+    uses: cloudvoyant/premise/.github/workflows/release-platform.yml@fix/diff-191-release-artifacts
+    secrets:
+      CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+    with:
+      flow: on-commit
+      release: auto
+      premise-ref: fix/diff-191-release-artifacts
+      package-environment: crates-io-rc
