@@ -10,7 +10,7 @@ permissions:
   contents: write
   id-token: write
 
-# Coordinated with cloudvoyant/premise#18. Action pinned to its verified RC commit.
+# Coordinated with cloudvoyant/premise#18. Action uses the verified stable release tag.
 jobs:
   plan:
     runs-on: ubuntu-22.04
@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - uses: cloudvoyant/premise@v0.5.0-rc.194
+      - uses: cloudvoyant/premise@v0.4.3
         id: plan
         with:
           command: plan
@@ -37,7 +37,7 @@ jobs:
           install-premise: build
       - name: Run the root hook once before matrix rows
         if: steps.plan.outputs.mode == 'matrix'
-        uses: cloudvoyant/premise@v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.4.3
         with:
           command: flow
           flow: on-commit
@@ -58,7 +58,7 @@ jobs:
           fetch-tags: true
           persist-credentials: false
       - name: Run complete flow
-        uses: cloudvoyant/premise@v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.4.3
         with:
           command: flow
           flow: on-commit
@@ -90,7 +90,7 @@ jobs:
           fetch-tags: true
           persist-credentials: false
       - name: Run scoped complete flow
-        uses: cloudvoyant/premise@v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.4.3
         with:
           command: flow-matrix
           flow: on-commit
@@ -177,7 +177,7 @@ jobs:
             exit 1
           fi
       - name: Publish combined release
-        uses: cloudvoyant/premise@v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.4.3
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -204,7 +204,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Publish registry packages
-        uses: cloudvoyant/premise@v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.4.3
         env:
           GH_TOKEN: ${{ github.token }}
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
