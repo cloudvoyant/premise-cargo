@@ -25,12 +25,12 @@ jobs:
       native: ${{ steps.plan.outputs.native }}
       version: ${{ steps.plan.outputs.release_version }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - uses: cloudvoyant/premise@3b6e4075dbfbf949b38b877ef9400a882ca0b2d8 # v0.5.0-rc.194
+      - uses: cloudvoyant/premise@v0.5.0-rc.194
         id: plan
         with:
           command: plan
@@ -39,7 +39,7 @@ jobs:
           install-premise: build
       - name: Run the root hook once before matrix rows
         if: steps.plan.outputs.mode == 'matrix'
-        uses: cloudvoyant/premise@3b6e4075dbfbf949b38b877ef9400a882ca0b2d8 # v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.5.0-rc.194
         with:
           command: flow
           flow: on-merge
@@ -54,13 +54,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
       - name: Run complete flow
-        uses: cloudvoyant/premise@3b6e4075dbfbf949b38b877ef9400a882ca0b2d8 # v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.5.0-rc.194
         with:
           command: flow
           flow: on-merge
@@ -69,7 +69,7 @@ jobs:
           channel: stable
           version: ${{ needs.plan.outputs.version }}
           output-dir: ${{ runner.temp }}/premise-files
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v4
         with:
           name: single
           path: ${{ runner.temp }}/premise-files/
@@ -86,13 +86,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
       - name: Run scoped complete flow
-        uses: cloudvoyant/premise@3b6e4075dbfbf949b38b877ef9400a882ca0b2d8 # v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.5.0-rc.194
         with:
           command: flow-matrix
           flow: on-merge
@@ -104,7 +104,7 @@ jobs:
           channel: stable
           version: ${{ needs.plan.outputs.version }}
           output-dir: ${{ runner.temp }}/premise-files
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.project }}-${{ matrix.platform }}
           path: ${{ runner.temp }}/premise-files/
@@ -151,19 +151,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v4
         if: >-
           needs.plan.outputs.mode == 'single' &&
           needs.plan.outputs.native == 'true'
         with:
           name: single
           path: ${{ runner.temp }}/premise-files
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - uses: actions/download-artifact@v4
         if: >-
           needs.plan.outputs.mode == 'matrix' &&
           needs.plan.outputs.native == 'true'
@@ -179,7 +179,7 @@ jobs:
             exit 1
           fi
       - name: Publish combined release
-        uses: cloudvoyant/premise@3b6e4075dbfbf949b38b877ef9400a882ca0b2d8 # v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.5.0-rc.194
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -202,11 +202,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Publish registry packages
-        uses: cloudvoyant/premise@3b6e4075dbfbf949b38b877ef9400a882ca0b2d8 # v0.5.0-rc.194
+        uses: cloudvoyant/premise@v0.5.0-rc.194
         env:
           GH_TOKEN: ${{ github.token }}
           CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
