@@ -64,3 +64,6 @@ template_registry:
       substitutions:
         premise-tauri-app: name
         com.premise.tauri-app: identifier
+      ci:
+        check_platforms: [linux, macos, windows]
+        release_platforms: [linux, macos, windows]
